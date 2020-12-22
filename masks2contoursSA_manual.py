@@ -4,8 +4,11 @@ from skimage import morphology
 from skimage import measure
 import matplotlib.axes as ax
 import matplotlib.pyplot as plt
+import scipy.io as sio
 
-#TO-DO: get plt.scatter() to match the behaivor produced by the use of the last two args in the MATLAB code's scatter()
+#TO-DO: run Renee's new examples and compare contours
+#TO-DO: hardcode in points to remove to make testing easier
+#TO-DO: are axes getting swapped somehow?
 
 def masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT):
     rv_wall = 3  # RV wall thickness, in [mm] (don't have contours)
@@ -16,21 +19,19 @@ def masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT):
     seg = _seg.get_fdata()
     info = _seg.header
 
-    if seg.ndim > 3:  # if segmentation includes all time points
+    if seg.ndim > 3: # if segmentation includes all time points
         seg = seg[:, :, :, frameNum].squeeze()
 
     # Obtain the 4x4 homogeneous affine matrix
     transform = _seg.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
     transform[:2, :] = transform[:2, :] * -1  # This edit has to do with RAS system in Nifti files
 
-    # Initialize pix_scale
+    # Initialize pix_scale. In the MATLAB script, pix_scale was a column vector. Here, it will be a row vector.
     pixdim = info.structarr["pixdim"][1:3 + 1]
     if np.isclose(np.linalg.norm(_seg.affine[:, 0]), 1):
         pix_scale = pixdim  # Here we are manually going into the header file's data. This is somewhat dangerous- maybe it can be done a better way?
     else:
         pix_scale = np.array([1, 1, 1])
-
-    # In the MATLAB script, pix_scale was a column vector. It is now a row vector.
 
     # Pixel spacing
     pixSpacing = pixdim[0]
@@ -64,75 +65,97 @@ def masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT):
         tmp_epiLV = getContoursFromMask(epiLVmask)
         tmp_endoRV = getContoursFromMask(endoRVmask)
 
-        # Debug
-        if i == 3:
-            flatIndices = np.array(list(range(30581, 30581 + 100 + 1)))
-            multiIndex = np.unravel_index(flatIndices, endoLVmask.shape)
-            print("Displaying some entries of endoLVmask")
-            print(endoLVmask[multiIndex])
-            print("Displaying tmp_endoLV")
-            print(tmp_endoLV)
+        # For debug purposes, import MATLAB versions of the above variables. See https://docs.scipy.org/doc/scipy/reference/tutorial/io.html.
+        endoLVmaskAll = sio.loadmat(resultsDir + "endoLVmaskAll.mat")["endoLVmaskAll"]
+        removedPointsAll = sio.loadmat(resultsDir + "removedPointsAll.mat")["removedPointsAll"]
+
+        tmp_endoLVAll = sio.loadmat(resultsDir + "tmp_endoLVAll.mat")["tmp_endoLVAll"]
+        tmp_epiLVAll = sio.loadmat(resultsDir + "tmp_epiLVAll.mat")["tmp_epiLVAll"]
 
         # Differentiate contours for RVFW (free wall) and RVS (septum)
         [tmp_RVS, ia, ib] = sharedRows(tmp_epiLV, tmp_endoRV)
         tmp_RVFW = tmp_endoRV
         tmp_RVFW = deleteHelper(tmp_RVFW, ib, 0) #In tmpRVFW, delete the row (hence the 0) with index ib.
 
-        print("i = {}".format(i))
-        print("ia = {}".format(ia))
-        print("ib = {}".format(ib))
-
         # Remove RVS contour points from LV epi contour
-        #print("i = {}".format(i))
-        #print(tmp_epiLV.shape)
-        #print(ia)
         tmp_epiLV = deleteHelper(tmp_epiLV, ia, 0) #In tmp_epiLV, delete the row (hence the 0) with index ia.
 
         #LV endo
-        if not tmp_endoLV.size == 0: #if not empty
-            #should be nonempty for slices 3 through 12 (at least)
+        if tmp_endoLV is not None and tmp_endoLV.size != 0:
+            #(This is a debug comment; delete later). should be nonempty for slices 3 through 12 (at least)
 
-            #TO-DO: compare output from Python with output from MATLAB before this if statement
+            print("LV endo") #debug
 
-            print("LV endo")
+            finalizeContour(mask=endoLV, tmp_contours=tmp_endoLV, tmp_contours_debug=tmp_endoLVAll, sliceIndex=i,
+                            transform=transform, pix_scale=pix_scale, downsample=downsample, PLOT=PLOT,
+                            plot_title = "LV Endocardium", contours=endoLVContours)
 
-            # Remove any points which lie outside of image.
-            indicesToRemove = np.nonzero(tmp_endoLV[:, 0] < 0)[0] #Simply calling np.nonzero() doesn't do the trick;
-            # np.nonzero() returns a tuple, and we want the first element of that tuple.
-            tmp_endoLV = deleteHelper(tmp_endoLV, indicesToRemove, 1) # The 1 corresponds to deleting a column.
+        if tmp_epiLV is not None and tmp_epiLV.size != 0:
 
-            # Downsample.
-            tmp_endoLV = tmp_endoLV[0:(tmp_endoLV.size - 1):downsample, :]
+            print("LV epi") #debug
 
-            # Check for outlying points (outlying points are probably due to holes in segmentation).
-            tmp_endoLV = removeFarPoints(tmp_endoLV)
-
-            if PLOT == 1 and tmp_endoLV is not None:
-                # Plot the mask and contour
-                print("plotting!")
-                plt.subplot(1, 3, 1)  # Going against Python conventions, indexing for subplots starts at 1.
-                plt.imshow(endoLV[:, :, i])
-                plt.set_cmap("gray")
-                plt.scatter(tmp_endoLV[:, 0], tmp_endoLV[:, 1])
-                plt.title("LV Endocardium")
-                plt.axis("equal")
-                plt.show()
-
-
-            # Convert contours to image coordinate system
-            # for j = 1:size(tmp_endoLV, 1)
-            # pix = [tmp_endoLV(j, 2)
-            # tmp_endoLV(j, 1)
-            # i - 1].*pix_scale
-            # tmp = transform * [pix; 1]
-            # endoLVContours(j,:, i) = transpose(tmp(1:3))
+            finalizeContour(mask=epiLV, tmp_contours=tmp_epiLV, tmp_contours_debug=tmp_epiLVAll, sliceIndex=i,
+                            transform=transform, pix_scale=pix_scale, downsample=downsample, PLOT=PLOT,
+                            plot_title = "LV Epicardium", contours=epiLVContours)
 
         #TO DO: Condense the "LV endo" and "LV epi" sections from the MATLAB code into a single function. Make sure to pass contours (coorresp. to endoLVContours or epiLVContours) by reference.
-        #TO DO: After previous step complete, generalize the function further so that it handles the "RV" section from the MATLAB code.
+        #TO DO: After previous step completed, generalize the function further so that it handles the "RV" section from the MATLAB code.
 
         # For debug purposes
         # plt.imshow(endoLVmask, interpolation = "none")
         # plt.show()
+
+
+#
+# Writes to contours
+#
+def finalizeContour(mask, tmp_contours, tmp_contours_debug, sliceIndex, transform, pix_scale, downsample, PLOT, plot_title, contours):
+    # Remove any points which lie outside of image.
+    indicesToRemove = np.nonzero(tmp_contours[:, 0] < 0)[0]  # Simply calling np.nonzero() doesn't do the trick;
+    # np.nonzero() returns a tuple, and we want the first element of that tuple.
+    tmp_endoLV = deleteHelper(tmp_contours, indicesToRemove, 1)  # The 1 corresponds to deleting a column.
+
+    # Downsample.
+    tmp_endoLV = tmp_endoLV[0:(tmp_endoLV.size - 1):downsample, :]
+
+    # Remove points in the contour that are too far from the majority of the contour. (This probably happens due to holes in segmentation).
+    tmp_endoLV = removeFarPoints(tmp_endoLV)
+
+    # If a plot is desired and contours exist, plot the mask and contour. (Contours might not exist, i.e. tmp_endoLV might be None, due to the recent updates).
+    if PLOT and tmp_endoLV is not None and tmp_endoLV.size != 0:
+        print("Plotting endoLV contours (tmp_endoLV).")
+        subplotHelper(title = plot_title + " (Python contours on Python mask)", nrows=1, ncols=3, index=1,
+                      maskSlice=np.squeeze(mask[:, :, sliceIndex]), contours=tmp_endoLV, color="red", swap=True)
+
+        subplotHelper(title = plot_title + " (MATLAB contours on Python mask)", nrows=1, ncols=3, index=2,
+                      maskSlice=np.squeeze(mask[:, :, sliceIndex]), contours=np.squeeze(tmp_contours_debug[:, :, sliceIndex]),
+                      color="green")
+
+        # Convert contours to image coordinate system.
+        for i in range(0, tmp_endoLV.shape[0] - 1):
+            pix = np.array([tmp_endoLV[i, 1], tmp_endoLV[i, 0], sliceIndex - 1]) * pix_scale
+            tmp = transform @ np.append(pix, 1)
+            contours[i, :, sliceIndex] = tmp[0:3]
+
+#Helper function for creating subplots.
+def subplotHelper(title, nrows, ncols, index, maskSlice, contours, color, swap = False):
+   #Adjust basic plot features.
+    plt.subplot(nrows, ncols, index)  # Going against Python conventions, indexing for subplots starts at 1.
+    plt.title(title)
+    plt.imshow(maskSlice) #this is the "background image" on top of which the contours will be displayed
+    plt.axis("equal") #equal aspect ratio
+    plt.set_cmap("gray") #colormap
+
+    #Set up the scatterplot.
+    xx = contours[:, 0]
+    yy = contours[:, 1]
+    if swap: #swap xx and yy
+        tmp = xx
+        xx = yy
+        yy = tmp
+    plt.scatter(x = xx, y = yy, c = color)  # Swapped the parameters for x and y.
+
+    plt.show()
 
 #Helper function to call np.stack() when appropriate (i.e. when the list argument to np.stack() is nonempty).
 def getContoursFromMask(mask):
@@ -158,7 +181,7 @@ def removeFarPoints(oldPoints):
     # Record the distances between consecutive points (wrap around from the last point to the first point) in oldPoints.
     numPts = oldPoints.shape[0]
     distances = []
-    for i in range(0, numPts):
+    for i in range(0, numPts - 1):
         if i == numPts - 1: #If on last point, compare last point with first point
             distances.append(np.linalg.norm(oldPoints[i, :] - oldPoints[0, :]))
         else:
@@ -166,16 +189,19 @@ def removeFarPoints(oldPoints):
 
     distances = np.array(distances)
 
+    print("distances = {}".format(distances))
+
     # Find points that are far away from other points.
     far_indices = np.nonzero(distances > (np.mean(distances) + 2 * np.std(distances)))[0] #Simply calling np.nonzero() doesn't do the trick;
     # np.nonzero() returns a tuple, and we want the first element of that tuple.
-    print("far_indices = {}".format(far_indices))
 
     # The point must be far from its two nearest neighbours, therefore, if there are extraneous points, the length of
     # 'far_indices' must be even. If the length of 'far_indices' is odd, the contour is open (but there still may be
     # extraneous points).
 
-    # Find these extraneous points.
+    print("far_indices = {}".format(far_indices))
+
+    # Find these extraneous points and remove them.
     if np.size(far_indices) > 1:
         indicesToRemove = []
         for i in range(0, np.size(far_indices) - 2):
@@ -183,6 +209,10 @@ def removeFarPoints(oldPoints):
                 indicesToRemove.append(far_indices[i])
             elif far_indices[i + 1] - far_indices[i] == 0:
                 indicesToRemove.append(far_indices[i + 1])
+
+        print("indices to remove = {}".format(indicesToRemove))
+
+        print("points to remove = {}".format(oldPoints[indicesToRemove]))
 
         # Remove the extraneous points.
         return deleteHelper(oldPoints, indicesToRemove)
