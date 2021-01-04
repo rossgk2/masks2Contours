@@ -5,6 +5,7 @@ def main():
     # Set to True to create intermediate plots
     use_default_filepaths = True
     PLOT = True
+    LOAD_MATLAB_VARS = False
 
     # Orientation for viewing plots
     az = 214.5268
@@ -52,7 +53,7 @@ def main():
 
     # Run main function to get contour points from masks - output will be saved in mat files in the results directory
     # [update comment]
-    masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT)
+    masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT, LOAD_MATLAB_VARS)
 
 # [Load results by returning from function]
 

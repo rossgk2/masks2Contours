@@ -70,17 +70,13 @@ RVInserts = zeros(2,3,slices);
 %For debug
 removedPointsAll = [];
 
-endoLVmaskAll = zeros(256, 256, slices);
-epiLVmaskAll = zeros(256, 256, slices);
-endoRVmaskAll = zeros(256, 256, slices);
-
-
-pad = 500;
-tmp_endoLVAll = zeros(pad, 2, slices);
-tmp_epiLVAll = zeros(pad, 2, slices);
-tmp_endoRVAll = zeros(pad, 2, slices);
-
-
+mkdir(sprintf("%s\\endoLVmask_slices", resultsDir))
+mkdir(sprintf("%s\\epiLVmask_slices", resultsDir))
+mkdir(sprintf("%s\\endoRVmask_slices", resultsDir))
+mkdir(sprintf("%s\\tmp_endoLV_slices", resultsDir))
+mkdir(sprintf("%s\\tmp_epiLV_slices", resultsDir))
+mkdir(sprintf("%s\\tmp_endoRV_slices", resultsDir))
+mkdir(sprintf("%s\\tmp_RVFW_slices", resultsDir))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Loop through short axis slices
@@ -99,41 +95,22 @@ for i = 1:slices
     tmp_epiLV = mask2poly(epiLVmask, 'Exact', 'CW');
     tmp_endoRV = mask2poly(endoRVmask, 'Exact', 'CW');    
     
-    %Add each slice to the 3D version (for debug)
-    endoLVmaskAll(:, :, i) = endoLVmask;
-    epiLVmaskAll(:, :, i) = epiLVmask;
-    endoRVmaskAll(:, :, i) = endoRVmask;
-
-    if size(tmp_endoLV, 1) ~= 0
-        tmp_endoLVAll(:, :, i) = padarray(tmp_endoLV, pad - size(tmp_endoLV, 1), -1, "post");
-    end
-   
-    if size(tmp_epiLV, 1) ~= 0
-        tmp_epiLVAll(:, :, i) = padarray(tmp_epiLV, pad - size(tmp_epiLV, 1), -1, "post");
-    end
+    % Save the slice data, for debug purposes
+    save(sprintf("%s\\endoLVmask_slices\\endoLVmask_slice_%d.mat", resultsDir, i), "endoLVmask")
+    save(sprintf("%s\\epiLVmask_slices\\epiLVmask_slice_%d.mat", resultsDir, i), "epiLVmask")
+    save(sprintf("%s\\endoRVmask_slices\\endoRVmask_slice_%d.mat", resultsDir, i), "endoRVmask")
     
-    if size(tmp_endoRV, 1) ~= 0
-        tmp_endoRVAll(:, :, i) = padarray(tmp_endoRV, pad - size(tmp_endoRV, 1), -1, "post");
-    end
-    
-    %Test that the debug files were constructed correctly
-    disp("endoLVmask");
-    if size(endoLVmask, 1) >= 5 && size(endoLVmask, 2) >= 5
-        endoLVmask(1:5, 1:5)
-    end
-    disp("endoLVmaskAll(:, :, i)");
-    endoLVmaskAll(1:5, 1:5, i)
-    disp("\n");
-    if size(tmp_endoLV, 1) >= 5
-        tmp_endoLV(1:5, :)
-    end
-    disp("tmp_endoLVAll(:, :, i)");
-    tmp_endoLVAll(1:5, :, i)
+    save(sprintf("%s\\tmp_endoLV_slices\\tmp_endoLV_slice_%d.mat", resultsDir, i), "tmp_endoLV")
+    save(sprintf("%s\\tmp_epiLV_slices\\tmp_epiLV_slice_%d.mat", resultsDir, i), "tmp_epiLV")
+    save(sprintf("%s\\tmp_endoRV_slices\\tmp_endoRV_slice_%d.mat", resultsDir, i), "tmp_endoRV")
     
     % Differentiate contours for RVFW (free wall) and RVS (septum)
     [tmp_RVS, ia, ib] = intersect(tmp_epiLV, tmp_endoRV, 'rows');
     tmp_RVFW = tmp_endoRV;
     tmp_RVFW(ib,:) = [];
+    
+    save(sprintf("%s\\tmp_RVFW_slices\\tmp_RVFW_slice_%d.mat", resultsDir, i), "tmp_RVFW")
+
     
     % Remove RVS contour points from LV epi contour
     tmp_epiLV(ia,:) = [];
@@ -206,6 +183,7 @@ for i = 1:slices
         tmp_RVFW(tmp_RVFW(:,1)<0,:) = []; % Remove any points which lie outside of image
         tmp_RVFW = tmp_RVFW(1:ds:end,:); % down sample
         [tmp_RVFW, ~] = removePoints(tmp_RVFW); % Check for outlying points - probably due to holes in segmentation
+        
         tmp_rvi_indices = getRVinserts(tmp_RVFW); % Get the RV insert points
         
         tmp_RVS(tmp_RVS(:,1)<0,:) = []; % Remove any points which lie outside of image
@@ -239,7 +217,7 @@ for i = 1:slices
             tmp = transform * [pix; 1];
             endoRVFWContours(j,:,i) = (tmp(1:3))';
         end
-        
+                
         % Save RV insert coordinates
         if ~isempty(tmp_rvi_indices)
             RVInserts(:,:,i) = endoRVFWContours(tmp_rvi_indices(1:2),:,i);
@@ -270,10 +248,8 @@ for i = 1:slices
     %clearvars tmp*
 end
 
-save(sprintf('%s/endoLVmaskAll.mat', resultsDir), 'endoLVmaskAll')
-save(sprintf('%s/tmp_endoLVAll.mat', resultsDir), 'tmp_endoLVAll')
-save(sprintf('%s/tmp_epiLVAll.mat', resultsDir), 'tmp_epiLVAll')
 save(sprintf('%s/removedPointsAll.mat', resultsDir), 'removedPointsAll')
+save(sprintf('%s/endoRVFWContours.mat', resultsDir), 'endoRVFWContours')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Calculate weights for RV insertion points
@@ -284,7 +260,9 @@ RVInsertsWeights = zeros(2,slices);
 % Loop through anterior (1) and posterior (2) sides for fitting a line
 for i = 1:2
     
-    inserts = [squeeze(RVInserts(i,:,:))' linspace(1,slices,slices)'];
+    inserts1 = squeeze(RVInserts(i,:,:))';
+    inserts2 = linspace(1,slices,slices)';
+    inserts = [inserts1 inserts2];
     inserts = inserts(any(inserts(:,1:3),2),:); % Get rid of rows with zeros
     
     points = inserts(:,1:3);
