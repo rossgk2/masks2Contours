@@ -175,6 +175,8 @@ def masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT, LOAD_M
 
             tmp_RVFW = cleanContours(tmp_RVFW, downsample)
             tmpRV_insertIndices = ut.getRVinsertIndices(tmp_RVFW)
+            print("i = {}".format(i))
+            print(tmpRV_insertIndices)
 
             tmp_RVS = cleanContours(tmp_RVS, downsample) #possibly switch this and the previous line for organization
 

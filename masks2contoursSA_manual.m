@@ -127,8 +127,7 @@ for i = 1:slices
         tmp_endoLV = tmp_endoLV(1:ds:end,:); % down sample
         [tmp_endoLV, removedPoints] = removePoints(tmp_endoLV); % Check for outlying points - probably due to holes in segmentation
         
-        fprintf('i = %d\n', i);
-        removedPointsAll = [removedPointsAll; removedPoints]
+        removedPointsAll = [removedPointsAll; removedPoints];
         
         if PLOT == 1
             % Plot the mask and contour
@@ -184,6 +183,7 @@ for i = 1:slices
         tmp_RVFW = tmp_RVFW(1:ds:end,:); % down sample
         [tmp_RVFW, ~] = removePoints(tmp_RVFW); % Check for outlying points - probably due to holes in segmentation
         
+        fprintf('i = %d\n', i);
         tmp_rvi_indices = getRVinserts(tmp_RVFW); % Get the RV insert points
         
         tmp_RVS(tmp_RVS(:,1)<0,:) = []; % Remove any points which lie outside of image
@@ -217,7 +217,7 @@ for i = 1:slices
             tmp = transform * [pix; 1];
             endoRVFWContours(j,:,i) = (tmp(1:3))';
         end
-                
+        
         % Save RV insert coordinates
         if ~isempty(tmp_rvi_indices)
             RVInserts(:,:,i) = endoRVFWContours(tmp_rvi_indices(1:2),:,i);
@@ -263,6 +263,7 @@ for i = 1:2
     inserts1 = squeeze(RVInserts(i,:,:))';
     inserts2 = linspace(1,slices,slices)';
     inserts = [inserts1 inserts2];
+    
     inserts = inserts(any(inserts(:,1:3),2),:); % Get rid of rows with zeros
     
     points = inserts(:,1:3);

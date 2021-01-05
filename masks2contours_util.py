@@ -53,13 +53,13 @@ def lineNormals2D(vertices, lineIndices = None):
 # Returns an 1 x m2 ndarray, for some m2, containing the indices of endoRVFWContours that correspond to the RV insert points.
 def getRVinsertIndices(points):
      distances = pointDistances(points)
-     upperThreshold = np.mean(distances) + 3 * np.std(distances)
+     upperThreshold = np.mean(distances) + 3 * np.std(distances, ddof = 1) # We need to use ddof = 1 to use Bessel's correction (so we need it to get the same std as is calculated in MATLAB).
      largeDists = distances > upperThreshold
 
     # Find the index (in "distances") of the point that is furthest from its neighbor. Return an ndarray consisting of
     # this point and *its* neighbor.
      if largeDists.size != 0:
-         largestDistIndex = np.argmax(largeDists)
+         largestDistIndex = np.argmax(distances)
          if largestDistIndex == len(points) - 1: # if the point furthest from its neighbor is the last point...
              return np.array([0, largestDistIndex]) #the neighbor to largestDistIndex is 0 in this case
          else:
