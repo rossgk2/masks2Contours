@@ -11,20 +11,11 @@ from textwrap import wrap
 # TO-DO
 # =======
 #
-# endoLVmask, epiLVmask, endoRVmask are correctly loaded by Python. The reason that the Python contours differ
-# from the MATLAB contours must be due to an error in getContoursFromMask(), which creates tmp_endoLV, tmp_epiLV,
-# tmp_endoRV.
-#
-# Problem: getContoursFromMask() is such that tmp_epiLV and tmp_endoRV will not have many rows in common;
-# "[tmp_RVS, ia, ib] = ut.sharedRows(tmp_epiLV, tmp_endoRV)" will produce a very small tmp_RVS
-#
-#
+# Finish RV section of this file.
+# Finish this file.
 #
 # Run Renee's new examples and compare contours
 # Axes are swapped when contours loaded with Python, for some reason.
-#
-# Finish RV section of this file.
-# Finish this file.
 #
 #
 
@@ -193,25 +184,26 @@ def masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT, LOAD_M
                 ps2 = plotSettings(maskSlice = np.squeeze(endoRV[:, :, i]), contours = tmp_RVS, color = "yellow", swap = not LOAD_MATLAB_VARS)
                 subplotHelperMulti(axs[2], plotSettingsList = [ps1, ps2], title = "RV Endocardium")
 
-                contoursToImageCoords(tmp_RVFW, transform, pix_scale, i, endoRVFWContours)
+            contoursToImageCoords(tmp_RVS, transform, pix_scale, i, RVSContours)
+            contoursToImageCoords(tmp_RVFW, transform, pix_scale, i, endoRVFWContours)
 
             # Save RV insert coordinates
             if tmpRV_insertIndices is not None and tmpRV_insertIndices.size != 0:
-                RVInserts[:, :, i] = endoRVFWContours_mat[tmpRV_insertIndices[0:1], :, i] #change back to the non _mat version after fixing problem
+                RVInserts[:, :, i] = endoRVFWContours[tmpRV_insertIndices[0:1 + 1], :, i]
 
         # Calculate RV epicardial wall by applying a thickness to RV endocardium
 
         # RV epicardium
         RVEndoNormals = ut.lineNormals2D(tmp_RVFW)
         tmp_epiRV = tmp_RVFW - np.ceil(rvWallThickness/pixSpacing) * RVEndoNormals if tmp_RVFW.size != 0 and RVEndoNormals.size != 0 else np.array([])
-        contoursToImageCoords(tmp_epiRV, transform, pix_scale, i, endoRVFWContours)
+        contoursToImageCoords(tmp_epiRV, transform, pix_scale, i, epiRVFWContours)
 
         # Show the figure for .5 seconds if PLOT is True.
         if PLOT and not (LVEndoIsEmpty or LVEpiIsEmpty or RVEndoIsEmpty):
             fig.show()
             while True:
-                 if plt.waitforbuttonpress(): break
-                 #if plt.waitforbuttonpress(timeout = .5) is None: break
+                 #if plt.waitforbuttonpress(): break
+                 if plt.waitforbuttonpress(timeout = .5) is None: break
 
         # In MATLAB, "clearvars tmp*" is called at this point.
 
@@ -253,7 +245,7 @@ def masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT, LOAD_M
 # Helper function for converting contours to an image coordinate system. This function writes to "contours".
 def contoursToImageCoords(tmp_contours, transform, pix_scale, sliceIndex, contours):
     for i in range(0, tmp_contours.shape[0]):
-        pix = np.array([tmp_contours[i, 1], tmp_contours[i, 0], sliceIndex - 1]) * pix_scale
+        pix = np.array([tmp_contours[i, 1], tmp_contours[i, 0], sliceIndex]) * pix_scale
         tmp = transform @ np.append(pix, 1)
         contours[i, :, sliceIndex] = tmp[0:3]
 

@@ -2,10 +2,9 @@ import os
 from masks2contoursSA_manual import masks2contoursSA_manual
 
 def main():
-    # Set to True to create intermediate plots
     use_default_filepaths = True
-    PLOT = True
-    LOAD_MATLAB_VARS = False
+    PLOT = True # Set to True to create intermediate plots
+    LOAD_MATLAB_VARS = True
 
     # Orientation for viewing plots
     az = 214.5268

@@ -111,7 +111,7 @@ def removeFarPoints(oldPoints):
 def pointDistances(points):
     numPts = points.shape[0]
     distances = []
-    for i in range(0, numPts - 1): # i covers the range {0, ..., numPts - 2} since numPts - 1 isn't included
+    for i in range(0, numPts): # i covers the range {0, ..., numPts - 1} since numPts isn't included
         if i == numPts - 1:  # If on last point, compare last point with first point
             distances.append(np.linalg.norm(points[i, :] - points[0, :]))
         else:
