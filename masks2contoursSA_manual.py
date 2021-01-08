@@ -175,9 +175,6 @@ def masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT, LOAD_M
 
             tmp_RVFW = cleanContours(tmp_RVFW, downsample)
             tmpRV_insertIndices = ut.getRVinsertIndices(tmp_RVFW)
-            print("i = {}".format(i))
-            print(tmpRV_insertIndices)
-
             tmp_RVS = cleanContours(tmp_RVS, downsample) #possibly switch this and the previous line for organization
 
             RVEndoIsEmptyAfterCleaning = (tmp_RVFW is None or tmp_RVS is None) or (tmp_RVFW.size == 0 or tmp_RVS.size == 0)
@@ -228,21 +225,14 @@ def masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT, LOAD_M
         _inserts2 = np.linspace(0, numSlices - 1, numSlices) #do we need to use 0, slices - 1 for first two args of linspace?
         inserts = np.vstack((_inserts1, _inserts2))
         inserts = inserts.transpose()
+        inserts = inserts[np.all(inserts[:, 0:2], 1), :] # Get rid of rows with zeros in the first three columns.
 
+        points = inserts[:, 0:3]
+        indices = inserts[:, 3].astype(int)
 
-        ii = np.all(inserts[:, 0:2], 1)
-        inserts = inserts[ii, :] # Get rid of rows with zeros in the first three columns.
-
-        pass
-        # points = inserts[:, 0:2]
-        # indices = inserts[:, 3]
-        #
-        # # Sort RV insert points by error
-        # [~,err] = fitLine3D(points);
-        #
-        # # Save normalized error
-        # RVInsertsWeights[i, indices] = abs(err)/max(abs(err)) #check abs and max
-
+        # Sort RV insert points by error, and save the normalized error in RVInsertsWeights.
+        err = ut.fitLine3D(points)
+        RVInsertsWeights[i, indices] = np.abs(err)/np.max(np.abs(err))
 
 # Helper function for converting contours to an image coordinate system. This function writes to "contours".
 def contoursToImageCoords(tmp_contours, transform, pix_scale, sliceIndex, contours):

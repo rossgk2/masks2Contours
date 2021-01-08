@@ -1,5 +1,26 @@
 import numpy as np
 
+# Given "points", an m x 3 ndarray for some m, this function returns a 1 x n ndarray containing the residuals between
+# points on a line of best fit and the original points from "points". The best fit line is obtained with use of SVD.
+def fitLine3D(points):
+    # First, use SVD to compute coeff.
+    colMeans = np.array([np.mean(points[:, i]) for i in range(0, 2 + 1)]) # Compute mean of each col in points.
+    tmp = points - colMeans # tmp is the result of subtracting colMeans from each row of points.
+    (u, s, vh) = np.linalg.svd(tmp)
+
+    # The matrices returned by the numpy SVD method seem to be transposes of those returned by the MATLAB SVD method.
+    # So we access vh[0, :] here rather than vh[:, 0].
+    coeff = vh[0, :]
+
+    # Go backwards to calculate error.
+    b = (tmp @ coeff).transpose()
+    c = np.outer(coeff, b)
+    newPoints = c.transpose() + colMeans
+
+    # Calculate err
+    err = [np.linalg.norm(newPoints[i, :] - points[i,:]) for i in range(0, points.shape[0])]
+    return np.array(err)
+
 # "vertices" is a m x 2 ndarray for some m, and "lines" is a (m - 1) x 2 ndarray of indices
 # in the "vertices" ndarray such that the ith row of lines contains the indices of the points that
 # constitute the ith line segment.
@@ -54,11 +75,11 @@ def lineNormals2D(vertices, lineIndices = None):
 def getRVinsertIndices(points):
      distances = pointDistances(points)
      upperThreshold = np.mean(distances) + 3 * np.std(distances, ddof = 1) # We need to use ddof = 1 to use Bessel's correction (so we need it to get the same std as is calculated in MATLAB).
-     largeDists = distances > upperThreshold
+     largeDistExists = np.any(distances > upperThreshold)
 
     # Find the index (in "distances") of the point that is furthest from its neighbor. Return an ndarray consisting of
     # this point and *its* neighbor.
-     if largeDists.size != 0:
+     if largeDistExists != 0:
          largestDistIndex = np.argmax(distances)
          if largestDistIndex == len(points) - 1: # if the point furthest from its neighbor is the last point...
              return np.array([0, largestDistIndex]) #the neighbor to largestDistIndex is 0 in this case
