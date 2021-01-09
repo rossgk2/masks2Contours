@@ -1,7 +1,6 @@
 import os
 from typing import NamedTuple
-from masks2contoursSA_manual import masks2contoursSA_manual
-from masks2contoursLA_manual import masks2contoursLA_manual
+from masks2Contours import masks2ContoursSA, masks2ContoursLA
 
 def main():
     use_default_filepaths = True
@@ -32,9 +31,9 @@ def main():
     # if PLOT == True, and returns (endoLVContours, epiLVContours, endoRVFWContours, epiRVFWContours, RVSContours, RVInserts, RVInsertsWeights).
     # Each variable in this tuple, except for the last two, is a m x 2 ndarray for some m.
 
-    #masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, config)
+    masks2ContoursSA(segName, imgName, resultsDir, frameNum, config)
 
-    masks2contoursLA_manual(LA_names, LA_segs, resultsDir, frameNum, config)
+    #masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config)
 
 class Config(NamedTuple):
     rvWallThickness: int # RV wall thickness, in [mm] (don't have contours); e.g. 3 ==> downsample by taking every third point
@@ -50,7 +49,7 @@ class Config(NamedTuple):
 #
 # The argument "goodInput" must be a boolean function accepting one argument. The intention is that, given a string
 # variable called input, goodInput(input) is True when input is valid and false otherwise.
-def get_correct_input(goodInput, prompt, errorMessage):
+def getCorrectInput(goodInput, prompt, errorMessage):
     validInput = False
     while not validInput:
         returnThis = input(prompt)
