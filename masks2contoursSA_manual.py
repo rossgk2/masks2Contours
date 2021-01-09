@@ -2,33 +2,14 @@ import numpy as np
 import nibabel as nib
 from skimage import morphology
 from skimage import measure
-import matplotlib.axes as ax
 import matplotlib.pyplot as plt
 import scipy.io as sio
 import masks2contours_util as ut
-from textwrap import wrap
 
-# TO-DO
-# =======
-#
-# Finish RV section of this file.
-# Finish this file.
-#
-# Run Renee's new examples and compare contours
-# Axes are swapped when contours loaded with Python, for some reason.
-#
-#
+# Note: axes are swapped when contours loaded with Python, for some reason. This is accounted for in this function, but
+# is still something to investigate.
 
-# NOTES
-# ======
-# tmp_RVFW is loaded correctly, at least when MATLAB vars are loaded.
-#
-# I think some "far points" are showing up in MATLAB plot because removeFarPoints isn't called on the MATLAB data.
-
-def masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT, LOAD_MATLAB_VARS):
-    rvWallThickness = 3  # RV wall thickness, in [mm] (don't have contours)
-    downsample = 3  # e.g. 3 ==> downsample by taking every third point
-
+def masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, config):
     # Load short axis segmentations and header info
     _seg = nib.load(segName)
     seg = _seg.get_fdata()
@@ -43,7 +24,7 @@ def masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT, LOAD_M
 
     # Initialize pix_scale. In the MATLAB script, pix_scale was a column vector. Here, it will be a row vector.
     pixdim = info.structarr["pixdim"][1:3 + 1]
-    if np.isclose(np.linalg.norm(_seg.affine[:, 0]), 1):
+    if np.isclose(np.linalg.norm(transform[:, 0]), 1):
         pix_scale = pixdim  # Here we are manually going into the header file's data. This is somewhat dangerous- maybe it can be done a better way?
     else:
         pix_scale = np.array([1, 1, 1])
@@ -52,25 +33,26 @@ def masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT, LOAD_M
     pixSpacing = pixdim[0]
     numSlices = seg.shape[2]
 
-    # Separate out LV endo, LV epi, and RV endo segmentations
+    # Separate out LV endo, LV epi, and RV endo segmentations.
     endoLV = seg == 1
     epiLV = (seg <= 2) * (seg > 0)
     endoRV = seg == 3
 
-    # Initialize variables
-    large_num = 200 # Use a number that is greater than or equal to the number of contour points.
-    endoLVContours = np.zeros([large_num, 3, numSlices])
-    epiLVContours = np.zeros([large_num, 3, numSlices])
-    endoRVFWContours = np.zeros([large_num, 3, numSlices])
-    epiRVFWContours = np.zeros([large_num, 3, numSlices])
-    RVSContours = np.zeros([large_num, 3, numSlices])
+    # Initialize variables.
+    ub = config.upperBdNumContourPts
+    endoLVContours = np.zeros([ub, 3, numSlices])
+    epiLVContours = np.zeros([ub, 3, numSlices])
+    endoRVFWContours = np.zeros([ub, 3, numSlices])
+    epiRVFWContours = np.zeros([ub, 3, numSlices])
+    RVSContours = np.zeros([ub, 3, numSlices])
     RVInserts = np.zeros([2, 3, numSlices])
 
     # Set up the machinery that will handle plotting.
-    fig, axs = plt.subplots(1, 3)  # A Figure with a 1 x 3 grid of Axes.
-    for ax in axs:
-        ax.axis("equal")
-    fig.tight_layout() # might use this: https://stackoverflow.com/questions/8802918/my-matplotlib-title-gets-cropped
+    if config.PLOT:
+        fig, axs = plt.subplots(1, 3)  # A Figure with a 1 x 3 grid of Axes.
+        for ax in axs:
+            ax.axis("equal")
+        fig.tight_layout()  # might use this: https://stackoverflow.com/questions/8802918/my-matplotlib-title-gets-cropped
 
     # Load some MATLAB variables, for debug.
     removedPointsAll = sio.loadmat(resultsDir + "removedPointsAll.mat")["removedPointsAll"]
@@ -81,12 +63,11 @@ def masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT, LOAD_M
     ###############################################################
     for i in range(0, numSlices):
         # Get masks for current slice
-        endoLVmask = cleanMask(endoLV[:, :, i])
-        epiLVmask = cleanMask(epiLV[:, :, i])
-        endoRVmask = cleanMask(endoRV[:, :, i])
+        endoLVmask = cleanMask(endoLV[:, :, i], irregMaxSize = 50)
+        epiLVmask = cleanMask(epiLV[:, :, i], irregMaxSize = 50)
+        endoRVmask = cleanMask(endoRV[:, :, i], irregMaxSize = 50)
 
-        # Get contours from masks. (measure.find_contours returns a list of m x 2 ndarrays; np.stack with axis = 0 converts
-        # this list of ndarrays into a single ndarray by concatenating rows).
+        # Get contours from masks.
         tmp_endoLV = getContoursFromMask(endoLVmask)
         tmp_epiLV = getContoursFromMask(epiLVmask)
         tmp_endoRV = getContoursFromMask(endoRVmask)
@@ -94,7 +75,7 @@ def masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT, LOAD_M
         ##########################################################################################################
         # Remove this section after done testing. See https://docs.scipy.org/doc/scipy/reference/tutorial/io.html.
         ##########################################################################################################
-        if LOAD_MATLAB_VARS:
+        if config.LOAD_MATLAB_VARS:
             # Load MATLAB variables.
             endoLVmask_mat = sio.loadmat(resultsDir + "endoLVmask_slices\\endoLVmask_slice_" + str(i + 1))["endoLVmask"]
             epiLVmask_mat = sio.loadmat(resultsDir + "epiLVmask_slices\\epiLVmask_slice_" + str(i + 1))["epiLVmask"]
@@ -131,23 +112,23 @@ def masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT, LOAD_M
         # These variables are for readability.
         LVEndoIsEmpty = tmp_endoLV is None or tmp_endoLV.size == 0
         LVEpiIsEmpty = tmp_epiLV is None or tmp_epiLV.size == 0
-        RVEndoIsEmpty = tmp_RVFW.shape[0] <= 6
+        RVEndoIsEmpty = tmp_RVFW is None or tmp_RVFW.shape[0] <= 6
 
         #LV endo
         if not LVEndoIsEmpty:
 
-            tmp_endoLV = cleanContours(tmp_endoLV, downsample)
+            tmp_endoLV = cleanContours(tmp_endoLV, config.downsample)
 
             # If a plot is desired and contours exist, plot the mask and contour. (Contours might not exist, i.e. tmp_endoLV might be None, due to the recent updates).
             LVEndoIsEmptyAfterCleaning = tmp_endoLV is None or tmp_endoLV.size == 0
-            if PLOT and not LVEndoIsEmptyAfterCleaning:
+            if config.PLOT and not LVEndoIsEmptyAfterCleaning:
                 subplotHelper(axs[0], title = "LV Endocardium", maskSlice = np.squeeze(endoLV[:, :, i]),
-                              contours = tmp_endoLV, color = "red", swap = not LOAD_MATLAB_VARS) # Python contours on Python mask
+                              contours = tmp_endoLV, color = "red", swap = not config.LOAD_MATLAB_VARS) # Python contours on Python mask
 
                 # subplotHelper(axs[0], title = "LV Endocardium", maskSlice = np.squeeze(endoLV[:, :, i]),
                 # contours = np.squeeze(tmp_endoLVAll[:, :, i]), color = "green") # MATLAB contours on Python mask
 
-                contoursToImageCoords(tmp_endoLV, transform, pix_scale, i, endoLVContours)  # This call writes to "endoLVContours".
+                contoursToImageCoords(tmp_endoLV, transform, pix_scale, i, endoLVContours, "SA")  # This call writes to "endoLVContours".
 
         #LV epi
         if not LVEpiIsEmpty:
@@ -157,34 +138,34 @@ def masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT, LOAD_M
             # the previous case because, since the next case doesn't exactly follow the same format, writing such a function
             # would do more to obfusticate than to simplify).
 
-            tmp_epiLV = cleanContours(tmp_epiLV, downsample)
+            tmp_epiLV = cleanContours(tmp_epiLV, config.downsample)
 
             # If a plot is desired and contours exist, plot the mask and contour. (Contours might not exist, i.e. tmp_endoLV might be None, due to the recent updates).
             LVEpiIsEmptyAfterCleaning = tmp_endoLV is None or tmp_endoLV.size == 0
-            if PLOT and not LVEpiIsEmptyAfterCleaning:
+            if config.PLOT and not LVEpiIsEmptyAfterCleaning:
                 subplotHelper(axs[1], title = "LV Epicardium", maskSlice = np.squeeze(epiLV[:, :, i]),
-                              contours = tmp_epiLV, color = "blue", swap = not LOAD_MATLAB_VARS) #Python contours on Python mask
+                              contours = tmp_epiLV, color = "blue", swap = not config.LOAD_MATLAB_VARS) #Python contours on Python mask
 
                 # subplotHelper(axs[1], title = "LV Epicardium", maskSlice = np.squeeze(epiLV[:, :, i]),
                 # contours = np.squeeze(tmp_epiLVAll[:, :, i]), color = "cyan") # MATLAB contours on Python mask
 
-                contoursToImageCoords(tmp_epiLV, transform, pix_scale, i, epiLVContours)  # This call writes to "epiLVContours".
+                contoursToImageCoords(tmp_epiLV, transform, pix_scale, i, epiLVContours, "SA")  # This call writes to "epiLVContours".
 
         # RV endo
         if not RVEndoIsEmpty:
 
-            tmp_RVFW = cleanContours(tmp_RVFW, downsample)
+            tmp_RVFW = cleanContours(tmp_RVFW, config.downsample)
             tmpRV_insertIndices = ut.getRVinsertIndices(tmp_RVFW)
-            tmp_RVS = cleanContours(tmp_RVS, downsample) #possibly switch this and the previous line for organization
+            tmp_RVS = cleanContours(tmp_RVS, config.downsample) #possibly switch this and the previous line for organization
 
             RVEndoIsEmptyAfterCleaning = (tmp_RVFW is None or tmp_RVS is None) or (tmp_RVFW.size == 0 or tmp_RVS.size == 0)
-            if PLOT and not RVEndoIsEmptyAfterCleaning:
-                ps1 = plotSettings(maskSlice = np.squeeze(endoRV[:, :, i]), contours = tmp_RVFW, color = "green", swap = not LOAD_MATLAB_VARS)
-                ps2 = plotSettings(maskSlice = np.squeeze(endoRV[:, :, i]), contours = tmp_RVS, color = "yellow", swap = not LOAD_MATLAB_VARS)
+            if config.PLOT and not RVEndoIsEmptyAfterCleaning:
+                ps1 = plotSettings(maskSlice = np.squeeze(endoRV[:, :, i]), contours = tmp_RVFW, color = "green", swap = not config.LOAD_MATLAB_VARS)
+                ps2 = plotSettings(maskSlice = np.squeeze(endoRV[:, :, i]), contours = tmp_RVS, color = "yellow", swap = not config.LOAD_MATLAB_VARS)
                 subplotHelperMulti(axs[2], plotSettingsList = [ps1, ps2], title = "RV Endocardium")
 
-            contoursToImageCoords(tmp_RVS, transform, pix_scale, i, RVSContours)
-            contoursToImageCoords(tmp_RVFW, transform, pix_scale, i, endoRVFWContours)
+            contoursToImageCoords(tmp_RVS, transform, pix_scale, i, RVSContours, "SA")
+            contoursToImageCoords(tmp_RVFW, transform, pix_scale, i, endoRVFWContours, "SA")
 
             # Save RV insert coordinates
             if tmpRV_insertIndices is not None and tmpRV_insertIndices.size != 0:
@@ -194,11 +175,11 @@ def masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT, LOAD_M
 
         # RV epicardium
         RVEndoNormals = ut.lineNormals2D(tmp_RVFW)
-        tmp_epiRV = tmp_RVFW - np.ceil(rvWallThickness/pixSpacing) * RVEndoNormals if tmp_RVFW.size != 0 and RVEndoNormals.size != 0 else np.array([])
-        contoursToImageCoords(tmp_epiRV, transform, pix_scale, i, epiRVFWContours)
+        tmp_epiRV = tmp_RVFW - np.ceil(config.rvWallThickness/pixSpacing) * RVEndoNormals if tmp_RVFW.size != 0 and RVEndoNormals.size != 0 else np.array([])
+        contoursToImageCoords(tmp_epiRV, transform, pix_scale, i, epiRVFWContours, "SA")
 
-        # Show the figure for .5 seconds if PLOT is True.
-        if PLOT and not (LVEndoIsEmpty or LVEpiIsEmpty or RVEndoIsEmpty):
+        # Show the figure for .5 seconds if config.PLOT is True.
+        if config.PLOT and not (LVEndoIsEmpty or LVEpiIsEmpty or RVEndoIsEmpty):
             fig.show()
             while True:
                  #if plt.waitforbuttonpress(): break
@@ -234,10 +215,20 @@ def masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT, LOAD_M
         err = ut.fitLine3D(points)
         RVInsertsWeights[i, indices] = np.abs(err)/np.max(np.abs(err))
 
+        return (endoLVContours, epiLVContours, endoRVFWContours, epiRVFWContours, RVSContours, RVInserts, RVInsertsWeights)
+
 # Helper function for converting contours to an image coordinate system. This function writes to "contours".
-def contoursToImageCoords(tmp_contours, transform, pix_scale, sliceIndex, contours):
+def contoursToImageCoords(tmp_contours, transform, pix_scale, sliceIndex, contours, SA_LA):
+    SA_LA = SA_LA.lower()
+    if SA_LA == "sa":
+        thirdComp = sliceIndex
+    elif SA_LA == "la":
+        thirdComp = 0
+    else:
+        raise ValueError("SA_LA must either be ``SA'' or ``LA''.")
+
     for i in range(0, tmp_contours.shape[0]):
-        pix = np.array([tmp_contours[i, 1], tmp_contours[i, 0], sliceIndex]) * pix_scale
+        pix = np.array([tmp_contours[i, 1], tmp_contours[i, 0], thirdComp]) * pix_scale
         tmp = transform @ np.append(pix, 1)
         contours[i, :, sliceIndex] = tmp[0:3]
 
@@ -297,41 +288,21 @@ def getContoursFromMask(mask):
     # In particular, given a binarized array, do not choose to find contours at the low or high value of the array. This
     # will often yield degenerate contours, especially around structures that are a single array element wide. Instead
     # choose a middle value, as above."
-    lst = measure.find_contours(mask, level = .5) #list is a list of m x 2 ndarrays.
+    lst = measure.find_contours(mask, level = .5)
+
+    # lst is a list of m x 2 ndarrays; the np.stack with axis = 0 used below converts
+    # this list of ndarrays into a single ndarray by concatenating rows.
 
     # This "else" in the below is the reason this function is necessary; np.stack() does not accept an empty list.
     return np.vstack(lst) if not len(lst) == 0 else np.array([])
 
 # Helper function for removing irregularities from masks.
-def cleanMask(mask):
-    #Remove irregularites
-    morphology.remove_small_objects(np.squeeze(mask), min_size = 50, connectivity = 2) # Might have to come back and see if connectivity = 2 was the right choice
+def cleanMask(mask, irregMaxSize):
+    # Remove irregularites with fewer than irregMaxSize pixels.Note, the "min_size" parameter to this function is
+    # incorrectly named, and should really be called "max_size".
+    morphology.remove_small_objects(np.squeeze(mask), min_size = irregMaxSize, connectivity = 2) # Might have to come back and see if connectivity = 2 was the right choice
 
     # Fill in the holes left by the removal (code from https://scikit-image.org/docs/dev/auto_examples/features_detection/plot_holes_and_peaks.html).
     seed = np.copy(mask)
     seed[1:-1, 1:-1] = mask.max()
     return morphology.reconstruction(seed, mask, method='erosion')
-
-# This function writes to "contours", which is a m1 x n1 x p1 ndarray for some m1, n1, p1. In practice,
-# "contours" is either "endoLVContours" or "epiLVContours".
-#
-# "mask" is an m2 x n2 x p2 ndarray for some m2, n2, p2. In practice, it is "endoLV" or "epiLV", and is something like
-# a 256 x 256 x 15 ndarray.
-# "tmp_contours" is an m3 x 2 ndarray for some m3. In practice, it is "tmp_endoLV" or "tmp_epiLV".
-# "more_contours" is an m4 x 2 ndarray for some m4. In practice, it is "tmp_endoLVAll" or "tmp_epiLVAll".
-# "sliceIndex" will be the index "i" inside a for-loop over the third dimension (the p-dimension) of "mask".
-# "transform", "pix_scale", "downsample" are meant to be "transform", "pix_scale", and "downsample" from outside this function.
-# If and only if "PLOT" is True, a plot of the contours will be generated. "plot_title" is then the title of this plot.
-# def finalizeContour(mask, tmp_contours, more_contours, sliceIndex, transform, pix_scale, downsample, PLOT, plot_title, contours):
-#     tmp_contours = cleanContours(tmp_contours, downsample)
-#
-#     # If a plot is desired and contours exist, plot the mask and contour. (Contours might not exist, i.e. tmp_endoLV might be None, due to the recent updates).
-#     if PLOT and tmp_contours is not None and tmp_contours.size != 0:
-#         subplotHelper(title = plot_title + " (Python contours on Python mask)", nrows=1, ncols=3, index=1,
-#                       maskSlice=np.squeeze(mask[:, :, sliceIndex]), contours=tmp_contours, color="red", swap=True)
-#
-#         subplotHelper(title = plot_title + " (MATLAB contours on Python mask)", nrows=1, ncols=3, index=2,
-#                       maskSlice=np.squeeze(mask[:, :, sliceIndex]), contours=np.squeeze(more_contours[:, :, sliceIndex]),
-#                       color="green")
-#
-#         contoursToImageCoords(tmp_contours, transform, pix_scale, sliceIndex, contours) # This call writes to "contours".

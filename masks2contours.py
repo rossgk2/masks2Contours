@@ -1,58 +1,47 @@
 import os
+from typing import NamedTuple
 from masks2contoursSA_manual import masks2contoursSA_manual
+from masks2contoursLA_manual import masks2contoursLA_manual
 
 def main():
     use_default_filepaths = True
-    PLOT = False # Set to True to create intermediate plots
+    PLOT = True # Set to True to create intermediate plots
     LOAD_MATLAB_VARS = True
 
     # Orientation for viewing plots
     az = 214.5268
     el = -56.0884
 
-    # Number of frame to be segmented
-    frameNum = 1
+    # Configure some settings.
+    config = Config(rvWallThickness = 3, downsample = 3, upperBdNumContourPts = 200, PLOT = True, LOAD_MATLAB_VARS = True)
+    frameNum = 1 # Index of frame to be segmented.
 
-    # For ease of debugging. Remove these lines and the below "if not" statement (but not its contents) later.
+    # Get filepaths ready.
     fldr = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\"
     resultsDir = fldr + "out\\"
-    convention = "CINE_SAX"
 
-    if not use_default_filepaths:
-        # Image directory
-        fldr = input(
-            "Please enter the absolute path of the folder in which images are stored. To use the default folder and skip "
-            "this step, press ENTER.")
-        if fldr.strip() == "":
-            fldr = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\"
+    # These are filepaths for the SA.
+    imgName = fldr + "CINE_SAX.nii"
+    segName = fldr + "CINE_SAX_" + str(frameNum) + ".nii"
 
-        # Create results directory
-        resultsDir = fldr + "out\\"
-        try:
-            os.mkdir(resultsDir)
-        except FileExistsError:
-            pass
+    # These are filepaths for the LA.
+    LA_segs = [fldr + "LAX_" + str(i) + "ch_1.nii" for i in range(2, 4 + 1)]
+    LA_names = [fldr + "RReg_LAX_" + str(i) + "ch_to_Aligned_SA.nii" for i in range(2, 4 + 1)]
 
-        #
-        # SHORT AXIS
-        #
+    # The following function produces contour points from masks for the short axis image files, displays them
+    # if PLOT == True, and returns (endoLVContours, epiLVContours, endoRVFWContours, epiRVFWContours, RVSContours, RVInserts, RVInsertsWeights).
+    # Each variable in this tuple, except for the last two, is a m x 2 ndarray for some m.
 
-        # Determine the names of the image and label files (.nii files).
-        convention = input(
-            "Enter the root word in the convention used to name image files and label files. Press ENTER to use the "
-            "default.\n (The default image name is \"CINE_SAX.nii\" and the default label name is \"CINE_SAX_" + str(
-                frameNum) + ".nii\"), so the default such root is \"CINE_SAX\".")
+    #masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, config)
 
-        # Create variables to hold these names.
-        if convention.strip() == "":
-            convention = "CINE_SAX"
+    masks2contoursLA_manual(LA_names, LA_segs, resultsDir, frameNum, config)
 
-    imgName = fldr + convention + ".nii"
-    segName = fldr + convention + "_" + str(frameNum) + ".nii"
-
-    # Run main function to get contour points from masks - output will be saved in mat files in the results directory
-    # [update comment]
-    masks2contoursSA_manual(segName, imgName, resultsDir, frameNum, PLOT, LOAD_MATLAB_VARS)
+class Config(NamedTuple):
+    rvWallThickness: int # RV wall thickness, in [mm] (don't have contours); e.g. 3 ==> downsample by taking every third point
+    downsample: int
+    upperBdNumContourPts: int # An upper bound on the number of contour points.
+    PLOT: bool
+    LOAD_MATLAB_VARS: bool
 
 # [Load results by returning from function]
 
