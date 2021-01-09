@@ -31,9 +31,9 @@ def main():
     # if PLOT == True, and returns (endoLVContours, epiLVContours, endoRVFWContours, epiRVFWContours, RVSContours, RVInserts, RVInsertsWeights).
     # Each variable in this tuple, except for the last two, is a m x 2 ndarray for some m.
 
-    masks2ContoursSA(segName, imgName, resultsDir, frameNum, config)
+    #masks2ContoursSA(segName, imgName, resultsDir, frameNum, config)
 
-    #masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config)
+    masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config)
 
 class Config(NamedTuple):
     rvWallThickness: int # RV wall thickness, in [mm] (don't have contours); e.g. 3 ==> downsample by taking every third point
