@@ -10,27 +10,7 @@ import masks2ContoursUtil as ut
 # is still something to investigate.
 
 def masks2ContoursSA(segName, imgName, resultsDir, frameNum, config):
-    # Load short axis segmentations and header info
-    _seg = nib.load(segName)
-    seg = _seg.get_fdata()
-    info = _seg.header
-
-    if seg.ndim > 3: # if segmentation includes all time points
-        seg = seg[:, :, :, frameNum].squeeze()
-
-    # Obtain the 4x4 homogeneous affine matrix
-    transform = _seg.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
-    transform[:2, :] = transform[:2, :] * -1  # This edit has to do with RAS system in Nifti files
-
-    # Initialize pix_scale. In the MATLAB script, pix_scale was a column vector. Here, it will be a row vector.
-    pixdim = info.structarr["pixdim"][1:3 + 1]
-    if np.isclose(np.linalg.norm(transform[:, 0]), 1):
-        pix_scale = pixdim  # Here we are manually going into the header file's data. This is somewhat dangerous- maybe it can be done a better way?
-    else:
-        pix_scale = np.array([1, 1, 1])
-
-    # Initialize some more things.
-    pixSpacing = pixdim[0]
+    (seg, transform, pix_scale, pixSpacing) = readFromNIFTI(segName, frameNum)
     numSlices = seg.shape[2]
 
     # Separate out LV endo, LV epi, and RV endo segmentations.
@@ -217,11 +197,11 @@ def masks2ContoursSA(segName, imgName, resultsDir, frameNum, config):
 
         return (endoLVContours, epiLVContours, endoRVFWContours, epiRVFWContours, RVSContours, RVInserts, RVInsertsWeights)
 
-
 def masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config):
     # Initialize variables.
     ub = config.upperBdNumContourPts
     numSlices = len(LA_names)
+
     endoLVContours = np.zeros([ub, 3, numSlices])
     epiLVContours = np.zeros([ub, 3, numSlices])
     endoRVFWContours = np.zeros([ub, 3, numSlices])
@@ -241,29 +221,7 @@ def masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config):
         tmp = LA_segs[i].split("\\")
         tmpLA = tmp[-1].split("_")
 
-        # Load long axis segmentations and header info
-        _seg = nib.load(LA_segs[i])
-        seg = _seg.get_fdata()
-        info = _seg.header
-
-        if seg.ndim > 3:  # if segmentation includes all time points
-            seg = seg[:, :, 0, frameNum].squeeze()
-
-        # Haven't tested if seg is loaded correctly yet.
-
-        # Obtain the 4x4 homogeneous affine matrix
-        transform = _seg.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
-        transform[:2, :] = transform[:2, :] * -1  # This edit has to do with RAS system in Nifti files
-
-        # Initialize pix_scale. In the MATLAB script, pix_scale was a column vector. Here, it will be a row vector.
-        pixdim = info.structarr["pixdim"][1:3 + 1]
-        if np.isclose(np.linalg.norm(transform[:, 0]), 1):
-            pix_scale = pixdim  # Here we are manually going into the header file's data. This is somewhat dangerous- maybe it can be done a better way?
-        else:
-            pix_scale = np.array([1, 1, 1])
-
-        # Initialize some more things.
-        pixSpacing = pixdim[0]
+        (seg, transform, pix_scale, pixSpacing) = readFromNIFTI(LA_segs[i], frameNum)
 
         # Separate out LV endo, LV epi, and RV endo segmentations.
         endoLV = seg == 1
@@ -394,6 +352,32 @@ def subplotHelper(ax, title, maskSlice, contours, color, swap = False, clear = T
 
     # Scatterplot. "s" is the size of the points in the scatterplot.
     ax.scatter(x = xx, y = yy, s = .5, c = color)
+
+# Helper function used by masks2ContoursSA() and masks2ContoursLA().
+def readFromNIFTI(segName, frameNum):
+    # Load short axis segmentations and header info
+    _seg = nib.load(segName)
+    seg = _seg.get_fdata()
+    info = _seg.header
+
+    if seg.ndim > 3:  # if segmentation includes all time points
+        seg = seg[:, :, :, frameNum].squeeze()
+
+    # Obtain the 4x4 homogeneous affine matrix
+    transform = _seg.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
+    transform[:2, :] = transform[:2, :] * -1  # This edit has to do with RAS system in Nifti files
+
+    # Initialize pix_scale. In the MATLAB script, pix_scale was a column vector. Here, it will be a row vector.
+    pixdim = info.structarr["pixdim"][1:3 + 1]
+    if np.isclose(np.linalg.norm(transform[:, 0]), 1):
+        pix_scale = pixdim  # Here we are manually going into the header file's data. This is somewhat dangerous- maybe it can be done a better way?
+    else:
+        pix_scale = np.array([1, 1, 1])
+
+    # Initialize some more things.
+    pixSpacing = pixdim[0]
+
+    return (seg, transform, pix_scale, pixSpacing)
 
 # Helper function to call np.stack() when appropriate (i.e. when the list argument to np.stack() is nonempty).
 def getContoursFromMask(mask):
