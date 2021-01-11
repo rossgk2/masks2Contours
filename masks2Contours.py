@@ -326,7 +326,20 @@ def readFromNIFTI(segName, frameNum, returnAll = True):
 # mask2D is a 2D ndarray, i.e it is a m x n ndarray for some m, n. This function returns a m x 2 ndarray, where
 # each row in the array represents a point in the contour around mask2D.
 def getContoursFromMask(mask2D, irregMaxSize):
-    mask2D = np.squeeze(cleanMask(mask2D, irregMaxSize))
+    # First, clean the mask.
+
+    # Remove irregularites with fewer than irregMaxSize pixels.Note, the "min_size" parameter to this function is
+    # incorrectly named, and should really be called "max_size".
+    morphology.remove_small_objects(np.squeeze(mask2D), min_size=irregMaxSize,
+                                    connectivity=2)  # Might have to come back and see if connectivity = 2 was the right choice
+
+    # Fill in the holes left by the removal (code from https://scikit-image.org/docs/dev/auto_examples/features_detection/plot_holes_and_peaks.html).
+    seed = np.copy(mask2D)
+    seed[1:-1, 1:-1] = mask2D.max()
+    mask2D = np.squeeze(morphology.reconstruction(seed, mask2D, method='erosion'))
+
+    # The mask is now cleaned; we can use measure.find contours() now.
+
     # It is very important that .5 is used for the "level" parameter.
     #
     # From https://scikit-image.org/docs/0.7.0/api/skimage.measure.find_contours.html:
@@ -341,14 +354,3 @@ def getContoursFromMask(mask2D, irregMaxSize):
 
     # This "else" in the below is the reason this function is necessary; np.stack() does not accept an empty list.
     return np.vstack(lst) if not len(lst) == 0 else np.array([])
-
-# Helper function for removing irregularities from masks.
-def cleanMask(mask, irregMaxSize):
-    # Remove irregularites with fewer than irregMaxSize pixels.Note, the "min_size" parameter to this function is
-    # incorrectly named, and should really be called "max_size".
-    morphology.remove_small_objects(np.squeeze(mask), min_size = irregMaxSize, connectivity = 2) # Might have to come back and see if connectivity = 2 was the right choice
-
-    # Fill in the holes left by the removal (code from https://scikit-image.org/docs/dev/auto_examples/features_detection/plot_holes_and_peaks.html).
-    seed = np.copy(mask)
-    seed[1:-1, 1:-1] = mask.max()
-    return morphology.reconstruction(seed, mask, method='erosion')
