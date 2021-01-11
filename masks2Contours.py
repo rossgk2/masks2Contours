@@ -49,15 +49,10 @@ def masks2ContoursSA(segName, imgName, resultsDir, frameNum, config):
         pixScaleCurrent = pixScale # constant
         pixSpacingCurrent = pixSpacing # constant
 
-        # Get masks for current slice
-        endoLVmask = cleanMask(endoLVCurrent, irregMaxSize = 50)
-        epiLVmask = cleanMask(epiLVCurrent, irregMaxSize = 50)
-        endoRVmask = cleanMask(endoRVCurrent, irregMaxSize = 50)
-
         # Get contours from masks.
-        tmp_endoLV = getContoursFromMask(endoLVmask)
-        tmp_epiLV = getContoursFromMask(epiLVmask)
-        tmp_endoRV = getContoursFromMask(endoRVmask)
+        tmp_endoLV = getContoursFromMask(endoLVCurrent, irregMaxSize = 50)
+        tmp_epiLV = getContoursFromMask(epiLVCurrent, irregMaxSize = 50)
+        tmp_endoRV = getContoursFromMask(endoRVCurrent, irregMaxSize = 50)
 
         ##########################################################################################################
         # Remove this section after done testing. See https://docs.scipy.org/doc/scipy/reference/tutorial/io.html.
@@ -252,18 +247,12 @@ def masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config):
         pixScaleCurrent = pixScaleList[i]
         pisSpacingCurrent = pixSpacingList[i]
 
-        # Get masks for current slice
-        # !! Unique to LA: - np.squeeze is called after cleanMask !!
-        endoLVmask = np.squeeze(cleanMask(endoLVCurrent, irregMaxSize = 20))
-        epiLVmask = np.squeeze(cleanMask(epiLVCurrent, irregMaxSize = 20))
-        endoRVmask = np.squeeze(cleanMask(endoRVCurrent, irregMaxSize = 20))
-
         # Get contours from masks.
-        tmp_endoLV = getContoursFromMask(endoLVmask)
-        tmp_epiLV = getContoursFromMask(epiLVmask)
-        tmp_endoRV = getContoursFromMask(endoRVmask)
+        tmp_endoLV = getContoursFromMask(endoLVCurrent, irregMaxSize = 20)
+        tmp_epiLV = getContoursFromMask(epiLVCurrent, irregMaxSize = 20)
+        tmp_endoRV = getContoursFromMask(endoRVCurrent, irregMaxSize = 20)
 
-        # Differentiate contours for RVFW (free wall) and RVS (septum)
+        # Differentiate contours for RVFW (free wall) and RVS (septum).
         [tmp_RVS, ia, ib] = ut.sharedRows(tmp_epiLV, tmp_endoRV)
         tmp_RVFW = tmp_endoRV
         tmp_RVFW = ut.deleteHelper(tmp_RVFW, ib, axis = 0)  # In tmpRVFW, delete the rows with index ib.
@@ -401,8 +390,10 @@ def readFromNIFTI(segName, frameNum, returnAll = True):
     else:
         return seg
 
-# Helper function to call np.stack() when appropriate (i.e. when the list argument to np.stack() is nonempty).
-def getContoursFromMask(mask):
+# mask2D is a 2D ndarray, i.e it is a m x n ndarray for some m, n. This function returns a m x 2 ndarray, where
+# each row in the array represents a point in the contour around mask2D.
+def getContoursFromMask(mask2D, irregMaxSize):
+    mask2D = np.squeeze(cleanMask(mask2D, irregMaxSize))
     # It is very important that .5 is used for the "level" parameter.
     #
     # From https://scikit-image.org/docs/0.7.0/api/skimage.measure.find_contours.html:
@@ -410,9 +401,9 @@ def getContoursFromMask(mask):
     # In particular, given a binarized array, do not choose to find contours at the low or high value of the array. This
     # will often yield degenerate contours, especially around structures that are a single array element wide. Instead
     # choose a middle value, as above."
-    lst = measure.find_contours(mask, level = .5)
+    lst = measure.find_contours(mask2D, level = .5)
 
-    # lst is a list of m x 2 ndarrays; the np.stack with axis = 0 used below converts
+    # lst is a list of m_ x 2 ndarrays; the np.stack with axis = 0 used below converts
     # this list of ndarrays into a single ndarray by concatenating rows.
 
     # This "else" in the below is the reason this function is necessary; np.stack() does not accept an empty list.
