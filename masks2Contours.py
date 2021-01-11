@@ -96,7 +96,7 @@ def masks2ContoursSA(segName, imgName, resultsDir, frameNum, config):
         LVEpiIsEmpty = tmp_epiLV is None or tmp_epiLV.size == 0
         RVEndoIsEmpty = tmp_RVFW is None or tmp_RVFW.shape[0] <= 6
 
-        #LV endo
+        # LV endo
         if not LVEndoIsEmpty:
 
             tmp_endoLV = cleanContours(tmp_endoLV, config.downsample)
@@ -105,14 +105,10 @@ def masks2ContoursSA(segName, imgName, resultsDir, frameNum, config):
             LVEndoIsEmptyAfterCleaning = tmp_endoLV is None or tmp_endoLV.size == 0
             if config.PLOT and not LVEndoIsEmptyAfterCleaning:
                 subplotHelper(axs[0], title = "LV Endocardium", maskSlice = np.squeeze(endoLVCurrent),
-                              contours = tmp_endoLV, color = "red", swap = not config.LOAD_MATLAB_VARS) # Python contours on Python mask
-
-                # subplotHelper(axs[0], title = "LV Endocardium", maskSlice = np.squeeze(endoLV[:, :, i]),
-                # contours = np.squeeze(tmp_endoLVAll[:, :, i]), color = "green") # MATLAB contours on Python mask
-
+                              contours = tmp_endoLV, color = "red", swap = not config.LOAD_MATLAB_VARS)
                 contoursToImageCoords(tmp_endoLV, transformCurrent, pixScaleCurrent, i, endoLVContours, "SA")  # This call writes to "endoLVContours".
 
-        #LV epi
+        # LV epi
         if not LVEpiIsEmpty:
 
             # In this case, we do basically the same thing as above, except with tmp_epiLV, epiLVmask, and epiLVContours instead of
@@ -126,14 +122,10 @@ def masks2ContoursSA(segName, imgName, resultsDir, frameNum, config):
             LVEpiIsEmptyAfterCleaning = tmp_endoLV is None or tmp_endoLV.size == 0
             if config.PLOT and not LVEpiIsEmptyAfterCleaning:
                 subplotHelper(axs[1], title = "LV Epicardium", maskSlice = np.squeeze(epiLVCurrent),
-                              contours = tmp_epiLV, color = "blue", swap = not config.LOAD_MATLAB_VARS) #Python contours on Python mask
-
-                # subplotHelper(axs[1], title = "LV Epicardium", maskSlice = np.squeeze(epiLV[:, :, i]),
-                # contours = np.squeeze(tmp_epiLVAll[:, :, i]), color = "cyan") # MATLAB contours on Python mask
-
+                              contours = tmp_epiLV, color = "blue", swap = not config.LOAD_MATLAB_VARS)
                 contoursToImageCoords(tmp_epiLV, transformCurrent, pixScaleCurrent, i, epiLVContours, "SA")  # This call writes to "epiLVContours".
 
-        # RV endo
+        # RV
         if not RVEndoIsEmpty:
 
             tmp_RVFW = cleanContours(tmp_RVFW, config.downsample)
@@ -261,7 +253,7 @@ def masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config):
         tmp_epiLV = ut.deleteHelper(tmp_epiLV, ia, axis = 0)  # In tmp_epiLV, delete the rows with index ia.
 
         # Remove line segments at base which are common to endoLV and epiLV
-        # !! this is unique to LA !!
+        # !! This is unique to LA !!
         [wont_use_this_var, ia, ib] = ut.sharedRows(tmp_endoLV, tmp_epiLV)
         tmp_endoLV = ut.deleteHelper(tmp_endoLV, ia, axis = 0)
         tmp_epiLV = ut.deleteHelper(tmp_epiLV, ib, axis = 0)
@@ -280,16 +272,48 @@ def masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config):
             LVEndoIsEmptyAfterCleaning = tmp_endoLV is None or tmp_endoLV.size == 0
             if config.PLOT and not LVEndoIsEmptyAfterCleaning:
                 # !! unique to LA !!:
-                # "maskSlice = np.squeeze(endoLV)" instead of "maskSlice = np.squeeze(endoLV[:, :, i]) #
                 # swap = True instead of swap = not LOAD_MATLAB_VARS
                 subplotHelper(axs[0], title = "LV Endocardium", maskSlice = np.squeeze(endoLVCurrent),
-                              contours = tmp_endoLV, color = "red",
-                              swap = True)  # Python contours on Python mask
-
-                # subplotHelper(axs[0], title = "LV Endocardium", maskSlice = np.squeeze(endoLV[:, :, i]),
-                # contours = np.squeeze(tmp_endoLVAll[:, :, i]), color = "green") # MATLAB contours on Python mask
+                              contours = tmp_endoLV, color = "red", swap = True)
 
                 contoursToImageCoords(tmp_endoLV, transformCurrent, pixScaleCurrent, i, endoLVContours, "LA")  # This call writes to "endoLVContours".
+
+        # LV epi
+        if not LVEpiIsEmpty:
+
+            # In this case, we do basically the same thing as above, except with tmp_epiLV, epiLVmask, and epiLVContours instead of
+            # tmp_endoLV, endoLVmask, and endoLVContours. A function is not used to generalize the work done by this and
+            # the previous case because, since the next case doesn't exactly follow the same format, writing such a function
+            # would do more to obfusticate than to simplify).
+
+            tmp_epiLV = cleanContours(tmp_epiLV, config.downsample)
+
+            # If a plot is desired and contours exist, plot the mask and contour. (Contours might not exist, i.e. tmp_endoLV might be None, due to the recent updates).
+            LVEpiIsEmptyAfterCleaning = tmp_endoLV is None or tmp_endoLV.size == 0
+            if config.PLOT and not LVEpiIsEmptyAfterCleaning:
+                subplotHelper(axs[1], title = "LV Epicardium", maskSlice = np.squeeze(epiLVCurrent),
+                             contours = tmp_epiLV, color = "blue", swap = True)
+                contoursToImageCoords(tmp_epiLV, transformCurrent, pixScaleCurrent, i, epiLVContours, "SA")  # This call writes to "epiLVContours".
+
+        # RV
+        if not RVEndoIsEmpty:
+            tmp_RVFW = cleanContours(tmp_RVFW, config.downsample)
+            tmp_RVS = cleanContours(tmp_RVS, config.downsample)
+
+            # Remove basal line segment in RVFW LA contour
+
+            # TO DO
+
+            RVEndoIsEmptyAfterCleaning = (tmp_RVFW is None or tmp_RVS is None) or (tmp_RVFW.size == 0 or tmp_RVS.size == 0)
+
+            if config.PLOT and not RVEndoIsEmptyAfterCleaning:
+                ps1 = plotSettings(maskSlice = np.squeeze(endoRVCurrent), contours = tmp_RVFW, color = "green", swap = True)
+                ps2 = plotSettings(maskSlice = np.squeeze(endoRVCurrent), contours = tmp_RVS, color = "yellow", swap = True)
+                subplotHelperMulti(axs[2], plotSettingsList = [ps1, ps2], title = "RV Endocardium")
+
+            contoursToImageCoords(tmp_RVS, transformCurrent, pixScaleCurrent, i, RVSContours, "SA")
+            contoursToImageCoords(tmp_RVFW, transformCurrent, pixScaleCurrent, i, endoRVFWContours, "SA")
+
 
         # Show the figure for .5 seconds if config.PLOT is True.
         if config.PLOT and not (LVEndoIsEmpty or LVEpiIsEmpty or RVEndoIsEmpty):
@@ -313,7 +337,7 @@ def contoursToImageCoords(tmp_contours, transform, pixScale, sliceIndex, contour
         tmp = transform @ np.append(pix, 1)
         contours[i, :, sliceIndex] = tmp[0:3]
 
-# Helper function used in finalizeContour.
+# Helper function.
 # "contours" is an m1 x 2 ndarray for some m1.
 # Returns an m2 x 2 ndarray that is the result of cleaning up "contours".
 def cleanContours(contours, downsample):
