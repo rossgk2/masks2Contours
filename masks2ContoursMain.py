@@ -4,15 +4,13 @@ from masks2Contours import masks2ContoursSA, masks2ContoursLA
 
 def main():
     use_default_filepaths = True
-    PLOT = True # Set to True to create intermediate plots
-    LOAD_MATLAB_VARS = True
 
     # Orientation for viewing plots
     az = 214.5268
     el = -56.0884
 
     # Configure some settings.
-    config = Config(rvWallThickness = 3, downsample = 3, upperBdNumContourPts = 200, PLOT = True, LOAD_MATLAB_VARS = True)
+    config = Config(rvWallThickness = 3, downsample = 3, upperBdNumContourPts = 200, PLOT = True, LOAD_MATLAB_VARS = False)
     frameNum = 1 # Index of frame to be segmented.
 
     # Get filepaths ready.
