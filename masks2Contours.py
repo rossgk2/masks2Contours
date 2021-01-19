@@ -1,3 +1,4 @@
+import alphashape
 import numpy as np
 import nibabel as nib
 from skimage import morphology
@@ -5,12 +6,13 @@ from skimage import measure
 import matplotlib.pyplot as plt
 import scipy.io as sio
 import masks2ContoursUtil as ut
+from SelectFromCollection import SelectFromCollection
 
 # Note: axes are swapped when contours loaded with Python, for some reason. This is accounted for in this function, but
 # is still something to investigate.
 
 def masks2ContoursSA(segName, imgName, resultsDir, frameNum, config):
-    # Read the 3D segmentation, transform matrix, and etc. from the NIFTI file.
+    # Read the 3D segmentation, transform matrix, and other geometry info from the NIFTI file.
     (seg, transform, pixScale, pixSpacing) = readFromNIFTI(segName, frameNum)
     numSlices = seg.shape[2]
 
@@ -35,10 +37,6 @@ def masks2ContoursSA(segName, imgName, resultsDir, frameNum, config):
             ax.axis("equal")
         fig.tight_layout()  # might use this: https://stackoverflow.com/questions/8802918/my-matplotlib-title-gets-cropped
 
-    # Load some MATLAB variables, for debug.
-    removedPointsAll = sio.loadmat(resultsDir + "removedPointsAll.mat")["removedPointsAll"]
-    endoRVFWContours_mat = sio.loadmat(resultsDir + "endoRVFWContours.mat")["endoRVFWContours"]
-
     # Loop over slices and get contours one slice at a time.
     for i in range(0, numSlices):
         inputsList = (endoLV[:, :, i], epiLV[:, :, i], endoRV[:, :, i], transform, pixScale, pixSpacing) #Note the last 3 args are the same every iteration.
@@ -49,10 +47,8 @@ def masks2ContoursSA(segName, imgName, resultsDir, frameNum, config):
 
     # Now, calculate weights for RV insertion points.
 
-    # Initialise variable to store error.
-    RVInsertsWeights = np.zeros((2, numSlices))
-
     # Loop through anterior (1) and posterior (2) sides for fitting a line.
+    RVInsertsWeights = np.zeros((2, numSlices)) # This will store errors.
     for i in range(0, 2):
 
         # In the MATLAB script, the following step essentially amounted to horizontally stacking _inserts1^T and _inserts2^T. (^T is matrix transpose).
@@ -104,6 +100,7 @@ def masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config):
             ax.axis("equal")
         fig.tight_layout()  # might use this: https://stackoverflow.com/questions/8802918/my-matplotlib-title-gets-cropped
 
+    # Loop over slices and get contours one slice at a time.
     for i in range(0, numSlices):
         # Get name of current LA view (this seems unnecessary but I've ported it over anyway).
         tmp = LA_segs[i].split("\\")
@@ -119,10 +116,10 @@ def slice2Contours(inputsLists, outputsList, config, figaxs, sliceIndex, SA_LA):
     # Check validity of SA_LA.
     SA_LA = SA_LA.lower()
     if not(SA_LA == "sa" or SA_LA == "la"):
-        raise ValueError("SA_LA must either be ``SA'' or ``LA''.")
+        raise ValueError("SA_LA must either be \"SA\" or \"LA\".")
 
     # Unpack tuples passed in as input.
-    (endoLVCurrent, epiLVCurrent, endoRVCurrent, transformCurrent, pixScaleCurrent, pixSpacingCurrent) = inputsLists
+    (endoLV, epiLV, endoRV, transform, pixScale, pixSpacing) = inputsLists
 
     if SA_LA == "sa":
         (endoLVContours, epiLVContours, RVSContours, endoRVFWContours, epiRVFWContours, RVInserts) = outputsList
@@ -133,9 +130,9 @@ def slice2Contours(inputsLists, outputsList, config, figaxs, sliceIndex, SA_LA):
         (fig, axs) = figaxs
 
     # Get contours from masks.
-    tmp_endoLV = getContoursFromMask(endoLVCurrent, irregMaxSize = 20)
-    tmp_epiLV = getContoursFromMask(epiLVCurrent, irregMaxSize = 20)
-    tmp_endoRV = getContoursFromMask(endoRVCurrent, irregMaxSize = 20)
+    tmp_endoLV = getContoursFromMask(endoLV, irregMaxSize = 20)
+    tmp_epiLV = getContoursFromMask(epiLV, irregMaxSize = 20)
+    tmp_endoRV = getContoursFromMask(endoRV, irregMaxSize = 20)
 
     # Differentiate contours for RVFW (free wall) and RVS (septum).
     [tmp_RVS, ia, ib] = ut.sharedRows(tmp_epiLV, tmp_endoRV)
@@ -165,9 +162,9 @@ def slice2Contours(inputsLists, outputsList, config, figaxs, sliceIndex, SA_LA):
         LVEndoIsEmptyAfterCleaning = tmp_endoLV is None or tmp_endoLV.size == 0
         if config.PLOT and not LVEndoIsEmptyAfterCleaning:
             swap = not config.LOAD_MATLAB_VARS if SA_LA == "sa" else True
-            subplotHelper(axs[0], title = "LV Endocardium", maskSlice = np.squeeze(endoLVCurrent),
+            subplotHelper(axs[0], title = "LV Endocardium", maskSlice = np.squeeze(endoLV),
                           contours = tmp_endoLV, color = "red", swap = swap)
-            contoursToImageCoords(tmp_endoLV, transformCurrent, pixScaleCurrent, sliceIndex, endoLVContours, SA_LA)  # This call writes to "endoLVContours".
+            contoursToImageCoords(tmp_endoLV, transform, pixScale, sliceIndex, endoLVContours, SA_LA)  # This call writes to "endoLVContours".
 
     # LV epi
     if not LVEpiIsEmpty:
@@ -183,9 +180,9 @@ def slice2Contours(inputsLists, outputsList, config, figaxs, sliceIndex, SA_LA):
         LVEpiIsEmptyAfterCleaning = tmp_endoLV is None or tmp_endoLV.size == 0
         if config.PLOT and not LVEpiIsEmptyAfterCleaning:
             swap = not config.LOAD_MATLAB_VARS if SA_LA == "sa" else True
-            subplotHelper(axs[1], title = "LV Epicardium", maskSlice = np.squeeze(epiLVCurrent),
+            subplotHelper(axs[1], title = "LV Epicardium", maskSlice = np.squeeze(epiLV),
                           contours = tmp_epiLV, color = "blue", swap = swap)
-            contoursToImageCoords(tmp_epiLV, transformCurrent, pixScaleCurrent, sliceIndex, epiLVContours, SA_LA)  # This call writes to "epiLVContours".
+            contoursToImageCoords(tmp_epiLV, transform, pixScale, sliceIndex, epiLVContours, SA_LA)  # This call writes to "epiLVContours".
 
     # RV
     if not RVEndoIsEmpty:
@@ -196,19 +193,43 @@ def slice2Contours(inputsLists, outputsList, config, figaxs, sliceIndex, SA_LA):
         if SA_LA == "sa":
             tmpRV_insertIndices = ut.getRVinsertIndices(tmp_RVFW)
 
-        # If doing long axis, remove basal line segment in RVFW LA contour.
-        if SA_LA == "la":
-            pass
-
         RVEndoIsEmptyAfterCleaning = (tmp_RVFW is None or tmp_RVS is None) or (tmp_RVFW.size == 0 or tmp_RVS.size == 0)
+
+        # If doing long axis, remove basal line segment in RVFW LA contour.
+        if SA_LA == "la" and not RVEndoIsEmptyAfterCleaning:
+            # see https://stackoverflow.com/questions/48978839/wait-user-input-in-matplotlib-figure-on-specific-keyboard-press
+
+            swap = not config.LOAD_MATLAB_VARS if SA_LA == "sa" else True
+            figI, axI = plt.subplots() # I for "inspection"
+
+            title = "Select points you would like to remove. Click and drag to lasso select.\n The zoom tool may also be helpful."
+            pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(endoRV), contours = tmp_RVS, color = "orange",
+                                size = 20, swap = swap) # maybe use something other than tmp_RVS?
+
+            lassoSelector = SelectFromCollection(axI, pts)
+
+            # Set up event handler.
+            def accept(event):
+                if event.key == "enter":
+                    print("Selected points:")
+                    print(lassoSelector.xys[lassoSelector.ind])
+                    lassoSelector.disconnect()
+                    axI.set_title("")
+                    figI.canvas.draw()
+                    plt.close("all")
+
+            figI.canvas.mpl_connect("key_press_event", accept)
+            plt.show() # Important to use plt.show() instead of figI.show(); see tacaswell's comment on https://github.com/matplotlib/matplotlib/issues/13101.
+            print("disconnected")
+
         if config.PLOT and not RVEndoIsEmptyAfterCleaning:
             swap = not config.LOAD_MATLAB_VARS if SA_LA == "sa" else True
-            ps1 = plotSettings(maskSlice = np.squeeze(endoRVCurrent), contours = tmp_RVFW, color = "green", swap = swap)
-            ps2 = plotSettings(maskSlice = np.squeeze(endoRVCurrent), contours = tmp_RVS, color = "yellow", swap = swap)
+            ps1 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = tmp_RVFW, color ="green", swap = swap)
+            ps2 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = tmp_RVS, color ="yellow", swap = swap)
             subplotHelperMulti(axs[2], plotSettingsList = [ps1, ps2], title = "RV Endocardium")
 
-        contoursToImageCoords(tmp_RVS, transformCurrent, pixScaleCurrent, sliceIndex, RVSContours, SA_LA)
-        contoursToImageCoords(tmp_RVFW, transformCurrent, pixScaleCurrent, sliceIndex, endoRVFWContours, SA_LA)
+        contoursToImageCoords(tmp_RVS, transform, pixScale, sliceIndex, RVSContours, SA_LA)
+        contoursToImageCoords(tmp_RVFW, transform, pixScale, sliceIndex, endoRVFWContours, SA_LA)
 
         # If doing short axis, save RV insert coordinates.
         if SA_LA == "sa" and (tmpRV_insertIndices is not None and tmpRV_insertIndices.size != 0):
@@ -217,12 +238,31 @@ def slice2Contours(inputsLists, outputsList, config, figaxs, sliceIndex, SA_LA):
         # Calculate RV epicardial wall by applying a thickness to RV endocardium.
         if SA_LA == "sa":
             RVEndoNormals = ut.lineNormals2D(tmp_RVFW)
-            tmp_epiRV = tmp_RVFW - np.ceil(config.rvWallThickness / pixSpacingCurrent) * RVEndoNormals \
+            tmp_epiRV = tmp_RVFW - np.ceil(config.rvWallThickness / pixSpacing) * RVEndoNormals \
                 if tmp_RVFW.size != 0 and RVEndoNormals.size != 0 else np.array([])
-            contoursToImageCoords(tmp_epiRV, transformCurrent, pixScaleCurrent, sliceIndex, epiRVFWContours, "SA")
+            contoursToImageCoords(tmp_epiRV, transform, pixScale, sliceIndex, epiRVFWContours, "SA")
         else:
-            pass
-            # The LA version of the code is slightly different. Renee said don't implement it, also.
+            # Double check that normal is pointing towards epicardium by checking to see if epi points are inside the alpha shape
+            # created by the endocardial points
+            RVEndoNormals = ut.lineNormals2D(tmp_RVFW)
+            tmp_epiRV = tmp_RVFW + RVEndoNormals * config.rvWallThickness / pixSpacing
+            divByZeroIndices = np.any(np.isinf(tmp_epiRV), axis = 1)
+            tmp_epiRV = ut.deleteHelper(tmp_epiRV, divByZeroIndices, axis = 0)
+
+            tmp_RV = np.vstack((tmp_RVFW, tmp_RVS))
+            alpha = alphashape.optimizealpha(tmp_RV)
+            shape = alphashape.alphashape(tmp_RV, alpha * 2)
+
+            # https://gis.stackexchange.com/questions/208546/check-if-a-point-falls-within-a-multipolygon-with-python
+
+            # countIN = inShape(a, tmp_epiRV(:,1), tmp_epiRV(:,2));
+            # if sum(countIN)/length(countIN) > 0.5 % If more than 50% of epi points are inside of the alpha shape
+            #    tmp_epiRV = tmp_RVFW - N*(rv_wall/pixSpacing); % Reverse the normal direction
+
+            contoursToImageCoords(tmp_epiRV, transform, pixScale, sliceIndex, epiRVFWContours, "LA")
+
+
+
 
     # Show the figure for .5 seconds if config.PLOT is True.
     if config.PLOT and not (LVEndoIsEmpty or LVEpiIsEmpty or RVEndoIsEmpty):
@@ -256,7 +296,7 @@ def cleanContours(contours, downsample):
     # Remove any points which lie outside of image. Note: simply calling np.nonzero() doesn't do the trick; np.nonzero()
     # returns a tuple, and we want the first element of that tuple.
     indicesToRemove = np.nonzero(contours[:, 0] < 0)[0]
-    contours = ut.deleteHelper(contours, indicesToRemove, axis = 0) #COME BACK
+    contours = ut.deleteHelper(contours, indicesToRemove, axis = 0)
 
     # Downsample.
     contours = contours[0:(contours.size - 1):downsample, :]
@@ -264,7 +304,7 @@ def cleanContours(contours, downsample):
     # Remove points in the contours that are too far from the majority of the contour. (This probably happens due to holes in segmentation).
     return ut.removeFarPoints(contours)
 
-class plotSettings:
+class PlotSettings:
     def __init__(self, maskSlice, contours, color, swap = False):
         self.maskSlice = maskSlice
         self.contours = contours
@@ -277,7 +317,7 @@ def subplotHelperMulti(ax, plotSettingsList, title):
         subplotHelper(ax, title, ps.maskSlice, ps.contours, ps.color, ps.swap, clear = False)
 
 # Helper function for creating subplots.
-def subplotHelper(ax, title, maskSlice, contours, color, swap = False, clear = True):
+def subplotHelper(ax, title, maskSlice, contours, color, size = .5, swap = False, clear = True):
     if clear:
         ax.clear()
 
@@ -291,7 +331,7 @@ def subplotHelper(ax, title, maskSlice, contours, color, swap = False, clear = T
         xx, yy = yy, xx
 
     # Scatterplot. "s" is the size of the points in the scatterplot.
-    ax.scatter(x = xx, y = yy, s = .5, c = color)
+    return ax.scatter(x = xx, y = yy, s = size, c = color) # Most uses of this function will not make use of the output returned.
 
 # Helper function used by masks2ContoursSA() and masks2ContoursLA().
 # If returnAll = True, returns (seg, transform, pixScale, pixSpacing). Otherwise, returns seg.
