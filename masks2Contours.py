@@ -197,35 +197,33 @@ def slice2Contours(inputsLists, outputsList, config, figaxs, sliceIndex, SA_LA):
 
         # If doing long axis, remove basal line segment in RVFW LA contour.
         if SA_LA == "la" and not RVEndoIsEmptyAfterCleaning:
-            # see https://stackoverflow.com/questions/48978839/wait-user-input-in-matplotlib-figure-on-specific-keyboard-press
-
-            swap = not config.LOAD_MATLAB_VARS if SA_LA == "sa" else True
             figI, axI = plt.subplots() # I for "inspection"
-
             title = "Select points you would like to remove. Click and drag to lasso select.\n The zoom tool may also be helpful."
-            pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(endoRV), contours = tmp_RVS, color = "orange",
-                                size = 20, swap = swap) # maybe use something other than tmp_RVS?
+            pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(endoRV), contours = tmp_RVS, color = "yellow",
+                                size = 20, swap = True) # maybe use something other than tmp_RVS?
 
-            lassoSelector = SelectFromCollection(axI, pts)
-
-            # Set up event handler.
-            def accept(event):
-                if event.key == "enter":
-                    print("Selected points:")
-                    print(lassoSelector.xys[lassoSelector.ind])
-                    lassoSelector.disconnect()
-                    axI.set_title("")
-                    figI.canvas.draw()
-                    plt.close("all")
-
-            figI.canvas.mpl_connect("key_press_event", accept)
+            # Create a lasso selector. It automatically is able to be used after plt.show().
+            lassoSelector = SelectFromCollection(figI, axI, pts)
             plt.show() # Important to use plt.show() instead of figI.show(); see tacaswell's comment on https://github.com/matplotlib/matplotlib/issues/13101.
-            print("disconnected")
+
+            # After the user has pressed "Enter", control will be returned to this point.
+
+            # The fig.show() call many lines below will not work unless we steal some "dummy" figure's figure manager
+            # and give it to fig.
+            #
+            # This is because plt.close("all"), which is called by the callback function that responds
+            # when "Enter" is pressed, destroys all figure managers owned by figures that are shown. (And we
+            # unfortunately do have to use plt.close("all") in order to get the matplotlib event loop to exit).
+            #
+            # This code was taken from https://stackoverflow.com/questions/31729948/matplotlib-how-to-show-a-figure-that-has-been-closed.
+            dummy = plt.figure()
+            new_manager = dummy.canvas.manager
+            new_manager.canvas.figure = fig
+            fig.set_canvas(new_manager.canvas)
 
         if config.PLOT and not RVEndoIsEmptyAfterCleaning:
-            swap = not config.LOAD_MATLAB_VARS if SA_LA == "sa" else True
-            ps1 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = tmp_RVFW, color ="green", swap = swap)
-            ps2 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = tmp_RVS, color ="yellow", swap = swap)
+            ps1 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = tmp_RVFW, color ="green", swap = True)
+            ps2 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = tmp_RVS, color ="yellow", swap = True)
             subplotHelperMulti(axs[2], plotSettingsList = [ps1, ps2], title = "RV Endocardium")
 
         contoursToImageCoords(tmp_RVS, transform, pixScale, sliceIndex, RVSContours, SA_LA)
@@ -243,7 +241,7 @@ def slice2Contours(inputsLists, outputsList, config, figaxs, sliceIndex, SA_LA):
             contoursToImageCoords(tmp_epiRV, transform, pixScale, sliceIndex, epiRVFWContours, "SA")
         else:
             # Double check that normal is pointing towards epicardium by checking to see if epi points are inside the alpha shape
-            # created by the endocardial points
+            # created by the endocardial points.
             RVEndoNormals = ut.lineNormals2D(tmp_RVFW)
             tmp_epiRV = tmp_RVFW + RVEndoNormals * config.rvWallThickness / pixSpacing
             divByZeroIndices = np.any(np.isinf(tmp_epiRV), axis = 1)
@@ -261,15 +259,12 @@ def slice2Contours(inputsLists, outputsList, config, figaxs, sliceIndex, SA_LA):
 
             contoursToImageCoords(tmp_epiRV, transform, pixScale, sliceIndex, epiRVFWContours, "LA")
 
-
-
-
     # Show the figure for .5 seconds if config.PLOT is True.
     if config.PLOT and not (LVEndoIsEmpty or LVEpiIsEmpty or RVEndoIsEmpty):
         fig.show()
         while True:
-            # if plt.waitforbuttonpress(): break
-            if plt.waitforbuttonpress(timeout = .5) is None: break
+            if plt.waitforbuttonpress(): break
+            #if plt.waitforbuttonpress(timeout = .5) is None: break
 
 # Helper function for converting contours to an image coordinate system. This function writes to "contours".
 def contoursToImageCoords(tmp_contours, transform, pixScale, sliceIndex, contours, SA_LA):
