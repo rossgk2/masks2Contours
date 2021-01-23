@@ -129,86 +129,86 @@ def slice2Contours(inputsLists, outputsList, config, figaxs, sliceIndex, SA_LA):
     if config.PLOT:
         (fig, axs) = figaxs
 
-    # Get contours from masks.
-    LVendoSlice = getContoursFromMask(endoLV, irregMaxSize = 20)
-    LVepiSlice = getContoursFromMask(epiLV, irregMaxSize = 20)
-    RVendoSlice = getContoursFromMask(endoRV, irregMaxSize = 20)
+    # Get contours for each slice in the different regions of the heart.
+    LVendoSContours = getContoursFromMask(endoLV, irregMaxSize = 20)
+    LVepiSContours = getContoursFromMask(epiLV, irregMaxSize = 20)
+    RVendoSContours = getContoursFromMask(endoRV, irregMaxSize = 20)
 
     # Differentiate contours for RVFW (free wall) and RVS (septum).
-    [RVSeptSlice, ia, ib] = ut.sharedRows(LVepiSlice, RVendoSlice)
-    RVFWSlice = RVendoSlice
-    RVFWSlice = ut.deleteHelper(RVFWSlice, ib, axis = 0)  # In tmpRVFW, delete the rows with index ib.
+    [RVSeptSContours, ia, ib] = ut.sharedRows(LVepiSContours, RVendoSContours)
+    RVFWSContours = RVendoSContours
+    RVFWSContours = ut.deleteHelper(RVFWSContours, ib, axis = 0)  # In tmpRVFW, delete the rows with index ib.
 
     # Remove RVS contour points from LV epi contour
-    LVepiSlice = ut.deleteHelper(LVepiSlice, ia, axis = 0)  # In LVepiSlice, delete the rows with index ia.
+    LVepiSContours = ut.deleteHelper(LVepiSContours, ia, axis = 0)  # In LVepiSContours, delete the rows with index ia.
 
     # If doing long axis, remove line segments at base which are common to endoLV and epiLV.
     if SA_LA == "la":
-        [wont_use_this_var, ia, ib] = ut.sharedRows(LVendoSlice, LVepiSlice)
-        LVendoSlice = ut.deleteHelper(LVendoSlice, ia, axis = 0)
-        LVepiSlice = ut.deleteHelper(LVepiSlice, ib, axis = 0)
+        [wont_use_this_var, ia, ib] = ut.sharedRows(LVendoSContours, LVepiSContours)
+        LVendoSContours = ut.deleteHelper(LVendoSContours, ia, axis = 0)
+        LVepiSContours = ut.deleteHelper(LVepiSContours, ib, axis = 0)
 
     # These variables are for readability.
-    LVEndoIsEmpty = LVendoSlice is None or np.max(LVendoSlice.shape) <= 2
-    LVEpiIsEmpty = LVepiSlice is None or np.max(LVepiSlice.shape) <= 2
-    RVEndoIsEmpty = RVFWSlice is None or RVFWSlice.size == 0
+    LVEndoIsEmpty = LVendoSContours is None or np.max(LVendoSContours.shape) <= 2
+    LVEpiIsEmpty = LVepiSContours is None or np.max(LVepiSContours.shape) <= 2
+    RVEndoIsEmpty = RVFWSContours is None or RVFWSContours.size == 0
 
     # LV endo
     if not LVEndoIsEmpty:
 
-        LVendoSlice = cleanContours(LVendoSlice, config.downsample)
+        LVendoSContours = cleanContours(LVendoSContours, config.downsample)
 
-        # If a plot is desired and contours exist, plot the mask and contour. (Contours might not exist, i.e. LVendoSlice might be None, due to the recent updates).
-        LVEndoIsEmptyAfterCleaning = LVendoSlice is None or LVendoSlice.size == 0
+        # If a plot is desired and contours exist, plot the mask and contour. (Contours might not exist, i.e. LVendoSContours might be None, due to the recent updates).
+        LVEndoIsEmptyAfterCleaning = LVendoSContours is None or LVendoSContours.size == 0
         if config.PLOT and not LVEndoIsEmptyAfterCleaning:
             swap = not config.LOAD_MATLAB_VARS if SA_LA == "sa" else True
             subplotHelper(axs[0], title = "LV Endocardium", maskSlice = np.squeeze(endoLV),
-                          contours = LVendoSlice, color = "red", swap = swap)
-            contoursToImageCoords(LVendoSlice, transform, pixScale, sliceIndex, endoLVContours, SA_LA)  # This call writes to "endoLVContours".
+                          contours = LVendoSContours, color = "red", swap = swap)
+            contoursToImageCoords(LVendoSContours, transform, pixScale, sliceIndex, endoLVContours, SA_LA)  # This call writes to "endoLVContours".
 
     # LV epi
     if not LVEpiIsEmpty:
 
-        # In this case, we do basically the same thing as above, except with LVepiSlice, epiLVmask, and epiLVContours instead of
-        # LVendoSlice, endoLVmask, and endoLVContours. A function is not used to generalize the work done by this and
+        # In this case, we do basically the same thing as above, except with LVepiSContours, epiLVmask, and epiLVContours instead of
+        # LVendoSContours, endoLVmask, and endoLVContours. A function is not used to generalize the work done by this and
         # the previous case because, since the next case doesn't exactly follow the same format, writing such a function
         # would do more to obfusticate than to simplify).
 
-        LVepiSlice = cleanContours(LVepiSlice, config.downsample)
+        LVepiSContours = cleanContours(LVepiSContours, config.downsample)
 
-        # If a plot is desired and contours exist, plot the mask and contour. (Contours might not exist, i.e. LVendoSlice might be None, due to the recent updates).
-        LVEpiIsEmptyAfterCleaning = LVendoSlice is None or LVendoSlice.size == 0
+        # If a plot is desired and contours exist, plot the mask and contour. (Contours might not exist, i.e. LVendoSContours might be None, due to the recent updates).
+        LVEpiIsEmptyAfterCleaning = LVendoSContours is None or LVendoSContours.size == 0
         if config.PLOT and not LVEpiIsEmptyAfterCleaning:
             swap = not config.LOAD_MATLAB_VARS if SA_LA == "sa" else True
             subplotHelper(axs[1], title = "LV Epicardium", maskSlice = np.squeeze(epiLV),
-                          contours = LVepiSlice, color = "blue", swap = swap)
-            contoursToImageCoords(LVepiSlice, transform, pixScale, sliceIndex, epiLVContours, SA_LA)  # This call writes to "epiLVContours".
+                          contours = LVepiSContours, color = "blue", swap = swap)
+            contoursToImageCoords(LVepiSContours, transform, pixScale, sliceIndex, epiLVContours, SA_LA)  # This call writes to "epiLVContours".
 
     # RV
     if not RVEndoIsEmpty:
-        RVFWSlice = cleanContours(RVFWSlice, config.downsample)
-        RVSeptSlice = cleanContours(RVSeptSlice, config.downsample)
+        RVFWSContours = cleanContours(RVFWSContours, config.downsample)
+        RVSeptSContours = cleanContours(RVSeptSContours, config.downsample)
 
         # If doing short axis, get the indices corresponding to insertion points in the RV.
         if SA_LA == "sa":
-            tmpRV_insertIndices = ut.getRVinsertIndices(RVFWSlice)
+            tmpRV_insertIndices = ut.getRVinsertIndices(RVFWSContours)
 
-        RVEndoIsEmptyAfterCleaning = (RVFWSlice is None or RVSeptSlice is None) or (RVFWSlice.size == 0 or RVSeptSlice.size == 0)
+        RVEndoIsEmptyAfterCleaning = (RVFWSContours is None or RVSeptSContours is None) or (RVFWSContours.size == 0 or RVSeptSContours.size == 0)
 
         # If doing long axis, remove basal line segment in RVFW LA contour.
         if SA_LA == "la" and not RVEndoIsEmptyAfterCleaning:
             figI, axI = plt.subplots() # I for "inspection"
             title = "Select points you would like to remove. Click and drag to lasso select.\n The zoom tool may also be helpful."
 
-            pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(endoRV), contours = RVSeptSlice, color = "yellow",
-                                size = 20, swap = True) # maybe use something other than RVSeptSlice?
+            pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(endoRV), contours = RVSeptSContours, color = "yellow",
+                                size = 20, swap = True) # maybe use something other than RVSeptSContours?
 
             # Create a lasso selector. It automatically is able to be used after plt.show().
             lassoSelector = SelectFromCollection(figI, axI, pts)
             plt.show() # Important to use plt.show() instead of figI.show(); see tacaswell's comment on https://github.com/matplotlib/matplotlib/issues/13101.
 
             # Remove the points that were selected from the contour.
-            RVSeptSlice = ut.deleteHelper(RVSeptSlice, lassoSelector.ind, axis = 0)
+            RVSeptSContours = ut.deleteHelper(RVSeptSContours, lassoSelector.ind, axis = 0)
 
             # After the user has pressed "Enter", control will be returned to this point.
 
@@ -226,12 +226,12 @@ def slice2Contours(inputsLists, outputsList, config, figaxs, sliceIndex, SA_LA):
             fig.set_canvas(new_manager.canvas)
 
         if config.PLOT and not RVEndoIsEmptyAfterCleaning:
-            ps1 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = RVFWSlice, color ="green", swap = True)
-            ps2 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = RVSeptSlice, color ="yellow", swap = True)
+            ps1 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = RVFWSContours, color ="green", swap = True)
+            ps2 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = RVSeptSContours, color ="yellow", swap = True)
             subplotHelperMulti(axs[2], plotSettingsList = [ps1, ps2], title = "RV Endocardium")
 
-        contoursToImageCoords(RVSeptSlice, transform, pixScale, sliceIndex, RVSContours, SA_LA)
-        contoursToImageCoords(RVFWSlice, transform, pixScale, sliceIndex, endoRVFWContours, SA_LA)
+        contoursToImageCoords(RVSeptSContours, transform, pixScale, sliceIndex, RVSContours, SA_LA)
+        contoursToImageCoords(RVFWSContours, transform, pixScale, sliceIndex, endoRVFWContours, SA_LA)
 
         # If doing short axis, save RV insert coordinates.
         if SA_LA == "sa" and (tmpRV_insertIndices is not None and tmpRV_insertIndices.size != 0):
@@ -239,19 +239,19 @@ def slice2Contours(inputsLists, outputsList, config, figaxs, sliceIndex, SA_LA):
 
         # Calculate RV epicardial wall by applying a thickness to RV endocardium.
         if SA_LA == "sa":
-            RVEndoNormals = ut.lineNormals2D(RVFWSlice)
-            RVepiSlice = RVFWSlice - np.ceil(config.rvWallThickness / pixSpacing) * RVEndoNormals \
-                if RVFWSlice.size != 0 and RVEndoNormals.size != 0 else np.array([])
+            RVEndoNormals = ut.lineNormals2D(RVFWSContours)
+            RVepiSlice = RVFWSContours - np.ceil(config.rvWallThickness / pixSpacing) * RVEndoNormals \
+                if RVFWSContours.size != 0 and RVEndoNormals.size != 0 else np.array([])
             contoursToImageCoords(RVepiSlice, transform, pixScale, sliceIndex, epiRVFWContours, "SA")
         else:
             # Double check that normal is pointing towards epicardium by checking to see if epi points are inside the alpha shape
             # created by the endocardial points.
-            RVEndoNormals = ut.lineNormals2D(RVFWSlice)
-            RVepiSlice = RVFWSlice + RVEndoNormals * config.rvWallThickness / pixSpacing
+            RVEndoNormals = ut.lineNormals2D(RVFWSContours)
+            RVepiSlice = RVFWSContours + RVEndoNormals * config.rvWallThickness / pixSpacing
             divByZeroIndices = np.any(np.isinf(RVepiSlice), axis = 1)
             RVepiSlice = ut.deleteHelper(RVepiSlice, divByZeroIndices, axis = 0)
 
-            tmp_RV = np.vstack((RVFWSlice, RVSeptSlice))
+            tmp_RV = np.vstack((RVFWSContours, RVSeptSContours))
             alpha = alphashape.optimizealpha(tmp_RV)
             shape = alphashape.alphashape(tmp_RV, alpha * 2)
 
@@ -259,7 +259,7 @@ def slice2Contours(inputsLists, outputsList, config, figaxs, sliceIndex, SA_LA):
 
             # countIN = inShape(a, RVepiSlice(:,1), RVepiSlice(:,2));
             # if sum(countIN)/length(countIN) > 0.5 % If more than 50% of epi points are inside of the alpha shape
-            #    RVepiSlice = RVFWSlice - N*(rv_wall/pixSpacing); % Reverse the normal direction
+            #    RVepiSlice = RVFWSContours - N*(rv_wall/pixSpacing); % Reverse the normal direction
 
             contoursToImageCoords(RVepiSlice, transform, pixScale, sliceIndex, epiRVFWContours, "LA")
 

@@ -1,3 +1,6 @@
+from glob import glob
+import nibabel as nib
+
 import os
 from typing import NamedTuple
 from masks2Contours import masks2ContoursSA, masks2ContoursLA
@@ -22,8 +25,8 @@ def main():
     segName = fldr + "CINE_SAX_" + str(frameNum) + ".nii"
 
     # These are filepaths for the LA.
-    LA_segs = [fldr + "LAX_" + str(i) + "ch_1.nii" for i in range(2, 4 + 1)]
-    LA_names = [fldr + "RReg_LAX_" + str(i) + "ch_to_Aligned_SA.nii" for i in range(2, 4 + 1)]
+    LA_segs = glob(fldr + "LAX_[0-9]ch_1.nii")
+    LA_names = glob(fldr + "RReg_LAX_[0-9]ch_to_Aligned_SA.nii")
 
     # The following function produces contour points from masks for the short axis image files, displays them
     # if PLOT == True, and returns (endoLVContours, epiLVContours, endoRVFWContours, epiRVFWContours, RVSContours, RVInserts, RVInsertsWeights).
@@ -32,6 +35,15 @@ def main():
     masks2ContoursSA(segName, imgName, resultsDir, frameNum, config)
 
     masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config)
+
+    #Valve points
+
+    numFrames = nib.load(imgName).get_fdata().shape[3]
+    print(numFrames)
+
+    mat_files = glob(fldr + "valve-motion-predicted-LA_[0-9]CH.mat")
+
+
 
 class Config(NamedTuple):
     rvWallThickness: int # RV wall thickness, in [mm] (don't have contours); e.g. 3 ==> downsample by taking every third point
