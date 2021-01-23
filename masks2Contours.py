@@ -199,12 +199,16 @@ def slice2Contours(inputsLists, outputsList, config, figaxs, sliceIndex, SA_LA):
         if SA_LA == "la" and not RVEndoIsEmptyAfterCleaning:
             figI, axI = plt.subplots() # I for "inspection"
             title = "Select points you would like to remove. Click and drag to lasso select.\n The zoom tool may also be helpful."
+
             pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(endoRV), contours = tmp_RVS, color = "yellow",
                                 size = 20, swap = True) # maybe use something other than tmp_RVS?
 
             # Create a lasso selector. It automatically is able to be used after plt.show().
             lassoSelector = SelectFromCollection(figI, axI, pts)
             plt.show() # Important to use plt.show() instead of figI.show(); see tacaswell's comment on https://github.com/matplotlib/matplotlib/issues/13101.
+
+            # Remove the points that were selected from the contour.
+            tmp_RVS = ut.deleteHelper(tmp_RVS, lassoSelector.ind, axis = 0)
 
             # After the user has pressed "Enter", control will be returned to this point.
 
@@ -309,7 +313,7 @@ class PlotSettings:
 def subplotHelperMulti(ax, plotSettingsList, title):
     ax.clear()  # The way that the timing of ax.clear() is handled (with the "clear = False" default arg to subplotHelper()) is somewhat messy, and can probably be improved somehow.
     for ps in plotSettingsList:
-        subplotHelper(ax, title, ps.maskSlice, ps.contours, ps.color, ps.swap, clear = False)
+        subplotHelper(ax = ax, title = title, maskSlice = ps.maskSlice, contours = ps.contours, color = ps.color, swap = ps.swap, clear = False)
 
 # Helper function for creating subplots.
 def subplotHelper(ax, title, maskSlice, contours, color, size = .5, swap = False, clear = True):
@@ -322,6 +326,7 @@ def subplotHelper(ax, title, maskSlice, contours, color, size = .5, swap = False
     # Rotate and flip the contours if necessary.
     xx = contours[:, 0]
     yy = contours[:, 1]
+
     if swap: # Swap xx and yy.
         xx, yy = yy, xx
 
