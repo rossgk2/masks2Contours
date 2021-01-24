@@ -68,7 +68,13 @@ def masks2ContoursSA(segName, imgName, resultsDir, frameNum, config):
         err = ut.fitLine3D(points)
         RVInsertsWeights[i, indices] = np.abs(err)/np.max(np.abs(err))
 
-        return (endoLVContours, epiLVContours, endoRVFWContours, epiRVFWContours, RVSContours, RVInserts, RVInsertsWeights)
+        # Return a 2-tuple of dictionaries.
+        return ({ "endoLV" : endoLVContours,
+                 "epiLV" : epiLVContours,
+                 "endoRVFW" : endoRVFWContours,
+                 "epiRVFW" : epiRVFWContours,
+                 "RVSept" : RVSContours } ,
+                {"RVInserts" : RVInserts, "RVInsertsWeights" : RVInsertsWeights})
 
 def masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config):
     # Precompute (more accurately, "pre-read") endoLV, epiLV, endoRV for each slice.
@@ -110,6 +116,13 @@ def masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config):
         if config.PLOT: #figaxs is possibly None (but this is fine because it is only used when config.PLOT == True)
             figaxs = (fig, axs)
         slice2Contours(inputsList, outputsList, config, figaxs, i, "LA")
+
+        # Return a dictionary
+        return {"endoLV": endoLVContours,
+                 "epiLV": epiLVContours,
+                 "endoRVFW": endoRVFWContours,
+                 "epiRVFW": epiRVFWContours,
+                 "RVSept": RVSContours}
 
 def slice2Contours(inputsLists, outputsList, config, figaxs, sliceIndex, SA_LA):
     # Check validity of SA_LA.

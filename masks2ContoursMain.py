@@ -2,6 +2,7 @@ from glob import glob
 import nibabel as nib
 import valvePoints as vp
 import numpy as np
+import masks2ContoursUtil as ut
 
 import os
 from typing import NamedTuple
@@ -30,13 +31,14 @@ def main():
     LA_segs = glob(fldr + "LAX_[0-9]ch_1.nii")
     LA_names = glob(fldr + "RReg_LAX_[0-9]ch_to_Aligned_SA.nii")
 
-    # The following function produces contour points from masks for the short axis image files, displays them
-    # if PLOT == True, and returns (endoLVContours, epiLVContours, endoRVFWContours, epiRVFWContours, RVSContours, RVInserts, RVInsertsWeights).
-    # Each variable in this tuple, except for the last two, is a m x 2 ndarray for some m.
-
-    # masks2ContoursSA(segName, imgName, resultsDir, frameNum, config)
-
-    # masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config)
+    # The following two functions, masks2ContoursSA() and masks2ContoursLA(), produce contour points from masks for the
+    # short and long axis image files, respectively. If PLOT == True, these contour points are displayed slice by slice
+    # as they are computed.
+    #
+    # SAContours and LAContours are dicts whose keys are strings such as "LVendo" or "RVSept" and whose values are
+    # m x 2 ndarrays containing the contour points. SAinserts is a dict with the two keys "RVInserts" and "RVInsertsWeights".
+    (SAContours, SAinserts) = masks2ContoursSA(segName, imgName, resultsDir, frameNum, config)
+    #LAContours = masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config)
 
     # Get valve points for mitral valve (mv), tricuspid valve (tv), aortic valve (av), and pulmonary valve (pv).
     # Note: the valve points computed by this Python script are slightly different than those produced by MATLAB because
@@ -53,7 +55,14 @@ def main():
     av = nonzeroRows(av)
     pv = nonzeroRows(pv)
 
+    # Omit short axis slices without any contours. Initialize includedSlices to hold the slices we will soon iterate over.
+    SAendoLVContours = SAContours["endoLV"]
+    slicesToKeep = np.squeeze(SAendoLVContours[0, 0, :])
+    slicesToOmit = np.logical_not(slicesToKeep).astype(int) # is 1 wherever slicesToKeep was 0.
 
+    numSlices = SAendoLVContours.shape[2]
+    includedSlices = np.linspace(1, numSlices, numSlices)
+    includedSlices = ut.deleteHelper(includedSlices, slicesToOmit, axis = 0)
 
 
 
