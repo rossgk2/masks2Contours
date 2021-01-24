@@ -1,6 +1,7 @@
 from glob import glob
 import nibabel as nib
 import valvePoints as vp
+import numpy as np
 
 import os
 from typing import NamedTuple
@@ -42,6 +43,20 @@ def main():
     # the interpolation function used in this code, np.interp(), uses a different interplation method than the MATLAB interp1().
     numFrames = nib.load(imgName).get_fdata().shape[3]  # all good
     (mv, tv, av, pv) = vp.manuallyCompileValvePoints(fldr, numFrames, frameNum)
+
+    def nonzeroRows(xv): # Returns result of removing rows of xv that are all 0.
+        return xv[np.any(xv, axis = 1), :]
+
+    mv = np.reshape(mv, (-1, 3)) # Reshape mv to have shape m x 3 for some m (the -1 indicates an unspecified value).
+    mv = nonzeroRows(mv)
+    tv = nonzeroRows(tv)
+    av = nonzeroRows(av)
+    pv = nonzeroRows(pv)
+
+
+
+
+
 
 
 
