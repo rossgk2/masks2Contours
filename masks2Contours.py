@@ -4,7 +4,6 @@ import nibabel as nib
 from skimage import morphology
 from skimage import measure
 import matplotlib.pyplot as plt
-import scipy.io as sio
 import masks2ContoursUtil as ut
 from SelectFromCollection import SelectFromCollection
 

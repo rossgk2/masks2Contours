@@ -1,5 +1,6 @@
 from glob import glob
 import nibabel as nib
+import valvePoints as vp
 
 import os
 from typing import NamedTuple
@@ -24,7 +25,7 @@ def main():
     imgName = fldr + "CINE_SAX.nii"
     segName = fldr + "CINE_SAX_" + str(frameNum) + ".nii"
 
-    # These are filepaths for the LA.
+    # These are lists of filepaths for the LA.
     LA_segs = glob(fldr + "LAX_[0-9]ch_1.nii")
     LA_names = glob(fldr + "RReg_LAX_[0-9]ch_to_Aligned_SA.nii")
 
@@ -32,16 +33,15 @@ def main():
     # if PLOT == True, and returns (endoLVContours, epiLVContours, endoRVFWContours, epiRVFWContours, RVSContours, RVInserts, RVInsertsWeights).
     # Each variable in this tuple, except for the last two, is a m x 2 ndarray for some m.
 
-    masks2ContoursSA(segName, imgName, resultsDir, frameNum, config)
+    # masks2ContoursSA(segName, imgName, resultsDir, frameNum, config)
 
-    masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config)
+    # masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config)
 
-    #Valve points
-
-    numFrames = nib.load(imgName).get_fdata().shape[3]
-    print(numFrames)
-
-    mat_files = glob(fldr + "valve-motion-predicted-LA_[0-9]CH.mat")
+    # Get valve points for mitral valve (mv), tricuspid valve (tv), aortic valve (av), and pulmonary valve (pv).
+    # Note: the valve points computed by this Python script are slightly different than those produced by MATLAB because
+    # the interpolation function used in this code, np.interp(), uses a different interplation method than the MATLAB interp1().
+    numFrames = nib.load(imgName).get_fdata().shape[3]  # all good
+    (mv, tv, av, pv) = vp.manuallyCompileValvePoints(fldr, numFrames, frameNum)
 
 
 
