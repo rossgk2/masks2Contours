@@ -1,6 +1,6 @@
 from glob import glob
 import nibabel as nib
-import valvePoints as vp
+import masks2ContoursMainUtil as mut
 import numpy as np
 import masks2ContoursUtil as ut
 
@@ -44,16 +44,14 @@ def main():
     # Note: the valve points computed by this Python script are slightly different than those produced by MATLAB because
     # the interpolation function used in this code, np.interp(), uses a different interplation method than the MATLAB interp1().
     numFrames = nib.load(imgName).get_fdata().shape[3]  # all good
-    (mv, tv, av, pv) = vp.manuallyCompileValvePoints(fldr, numFrames, frameNum)
+    (mv, tv, av, pv) = mut.manuallyCompileValvePoints(fldr, numFrames, frameNum)
 
-    def nonzeroRows(xv): # Returns result of removing rows of xv that are all 0.
-        return xv[np.any(xv, axis = 1), :]
-
+    # Remove rows that are all zero from mv, tv, av, pv.
     mv = np.reshape(mv, (-1, 3)) # Reshape mv to have shape m x 3 for some m (the -1 indicates an unspecified value).
-    mv = nonzeroRows(mv)
-    tv = nonzeroRows(tv)
-    av = nonzeroRows(av)
-    pv = nonzeroRows(pv)
+    mv = ut.removeZerorows(mv)
+    tv = ut.removeZerorows(tv)
+    av = ut.removeZerorows(av)
+    pv = ut.removeZerorows(pv)
 
     # Omit short axis slices without any contours. Initialize includedSlices to hold the slices we will soon iterate over.
     SAendoLVContours = SAContours["endoLV"]
@@ -64,6 +62,11 @@ def main():
     includedSlices = np.linspace(1, numSlices, numSlices)
     includedSlices = ut.deleteHelper(includedSlices, slicesToOmit, axis = 0)
 
+    # Calculate apex using "method 2" from the MATLAB script.
+    LAepiLVContours = LAContours["epiLV"]
+    epiPts1 = np.squeeze(LAepiLVContours[:, :, 0])
+    epiPts2 = np.squeeze(LAepiLVContours[:, :, 2])
+    apex = mut.calcApex(epiPts1, epiPts2)
 
 
 

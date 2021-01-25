@@ -196,3 +196,7 @@ def sharedRows(arr1, arr2):
     sharedIndicesArr2 = np.array(sharedIndicesArr2)
 
     return [_sharedRows, sharedIndicesArr1, sharedIndicesArr2]
+
+# Returns result of removing rows of arr, which is an ndarray, that are all 0.
+def removeZerorows(arr):
+    return arr[np.any(arr, axis = 1), :]

@@ -2,6 +2,19 @@ import numpy as np
 import masks2ContoursUtil as ut
 from glob import glob
 import scipy.io as sio
+from scipy.spatial.distance import cdist
+
+# Return the point p1 in epiPts1 such that p1 minimizes the distance between p1 and p2, where p2 can be
+# any point in epiPts2.
+def calcApex(epiPts1, epiPts2):
+    epiPts1 = ut.removeZerorows(epiPts1)
+    epiPts2 = ut.removeZerorows(epiPts2)
+    dist = cdist(epiPts1, epiPts2) # Compute pairwise distances.
+    apexIndex = np.argmin(dist)
+    if apexIndex.shape != ():
+        apexIndex = apexIndex[0]
+
+    return epiPts1[apexIndex, :]
 
 # fldr is the folder where the valve points .mat files are stored.
 # numFrames is the number of frames in the SA image.
