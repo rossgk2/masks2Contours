@@ -67,7 +67,7 @@ def main():
     LAepiLVContours = LAContours["epiLV"]
     epiPts1 = np.squeeze(LAepiLVContours[:, :, 0])
     epiPts2 = np.squeeze(LAepiLVContours[:, :, 2])
-    #apex = mut.calcApex(epiPts1, epiPts2)
+    apex = mut.calcApex(epiPts1, epiPts2)
 
     # Plot the results.
     import matplotlib.pyplot as plt

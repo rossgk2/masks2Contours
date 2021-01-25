@@ -10,7 +10,7 @@ def calcApex(epiPts1, epiPts2):
     epiPts1 = ut.removeZerorows(epiPts1)
     epiPts2 = ut.removeZerorows(epiPts2)
     dist = cdist(epiPts1, epiPts2) # Compute pairwise distances.
-    apexIndex = np.argmin(dist)
+    apexIndex = np.unravel_index(np.argmin(dist), dist.shape)[0]
     if apexIndex.shape != ():
         apexIndex = apexIndex[0]
 
@@ -25,7 +25,7 @@ def calcApex(epiPts1, epiPts2):
 # - tv, av, and pv are 2D ndarrays containing the tricuspid, aortic, and pulmonary valve points. tv, av, and pv may
 # all be None.
 def manuallyCompileValvePoints(fldr, numFrames, frameNum):
-    mat_files = glob(fldr + "valve-motion-predicted-LA_[0-9]CH.mat")  # all good
+    mat_files = glob(fldr + "valve-motion-predicted-LA_[0-9]CH.mat")
 
     mv = np.zeros((len(mat_files), 2, 3))
     tv = np.zeros((2, 3))
