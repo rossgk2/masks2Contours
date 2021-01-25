@@ -74,9 +74,7 @@ def main():
     from mpl_toolkits.mplot3d import Axes3D # This import is necessary for the projection = "3d" option below, even though
                                             # no function from this import is used.
 
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1, projection = "3d")
-    #fig, ax = plt.subplots(1, 1, projection = "3d")
+    fig, ax = plt.subplots(1, 1, subplot_kw = {"projection" : "3d"})
     for i in includedSlices:
         endoLV = prepareContour("endoLV", SAContours, i)
         epiLV = prepareContour("epiLV", SAContours, i)
@@ -91,7 +89,7 @@ def main():
         ax.scatter(epiRVFW[:, 0], epiRVFW[:, 1], epiRVFW[:, 2], marker = ".", color = "yellow")
         ax.scatter(RVSept[:, 0], RVSept[:, 1], RVSept[:, 2], marker = ".", color = "blue")
 
-    plt.show()
+    plt.show() # Must use plt.show() instead of fig.show(). Might have something to do with https://github.com/matplotlib/matplotlib/issues/13101#issuecomment-452032924
 
 def prepareContour(varName, contoursDict, sliceIndex):
     result = contoursDict[varName]

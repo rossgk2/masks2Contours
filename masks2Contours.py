@@ -217,7 +217,7 @@ def slice2Contours(inputsLists, outputsList, config, figaxs, sliceIndex, SA_LA):
 
             # Create a lasso selector. It automatically is able to be used after plt.show().
             lassoSelector = SelectFromCollection(figI, axI, pts)
-            plt.show() # Important to use plt.show() instead of figI.show(); see tacaswell's comment on https://github.com/matplotlib/matplotlib/issues/13101.
+            plt.show() # Important to use plt.show() instead of figI.show() so that the event loop runs. See https://github.com/matplotlib/matplotlib/issues/13101#issuecomment-452032924
 
             # Remove the points that were selected from the contour.
             RVSeptSContours = ut.deleteHelper(RVSeptSContours, lassoSelector.ind, axis = 0)
