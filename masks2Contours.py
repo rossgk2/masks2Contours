@@ -69,7 +69,7 @@ def masks2ContoursSA(segName, imgName, resultsDir, frameNum, config):
         RVInsertsWeights[i, indices] = np.abs(err)/np.max(np.abs(err))
 
     # Return a 2-tuple of dictionaries.
-    return ({ "endoLV" : endoLVContours,
+    return ({"endoLV" : endoLVContours,
             "epiLV" : epiLVContours,
             "endoRVFW" : endoRVFWContours,
             "epiRVFW" : epiRVFWContours,
@@ -117,7 +117,7 @@ def masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config):
             figaxs = (fig, axs)
         slice2Contours(inputsList, outputsList, config, figaxs, i, "LA")
 
-    # Return a dictionary
+    # Return a dictionary.
     return {"endoLV": endoLVContours,
             "epiLV": epiLVContours,
             "endoRVFW": endoRVFWContours,
@@ -290,7 +290,7 @@ def contoursToImageCoords(maskSlice, transform, pixScale, sliceIndex, contours, 
     elif SA_LA == "la":
         thirdComp = 0
     else:
-        raise ValueError("SA_LA must either be ``SA'' or ``LA''.")
+        raise ValueError("SA_LA must either be \"SA\" or \"LA\".")
 
     for i in range(0, maskSlice.shape[0]):
         pix = np.array([maskSlice[i, 1], maskSlice[i, 0], thirdComp]) * pixScale

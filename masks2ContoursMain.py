@@ -60,17 +60,43 @@ def main():
 
     numSlices = SAendoLVContours.shape[2]
     includedSlices = np.linspace(1, numSlices, numSlices)
-    includedSlices = ut.deleteHelper(includedSlices, slicesToOmit, axis = 0)
+    includedSlices = ut.deleteHelper(includedSlices, slicesToOmit, axis = 0).astype(int)
+    includedSlices = includedSlices - 1 # convert to Python indexing
 
     # Calculate apex using "method 2" from the MATLAB script.
     LAepiLVContours = LAContours["epiLV"]
     epiPts1 = np.squeeze(LAepiLVContours[:, :, 0])
     epiPts2 = np.squeeze(LAepiLVContours[:, :, 2])
-    apex = mut.calcApex(epiPts1, epiPts2)
+    #apex = mut.calcApex(epiPts1, epiPts2)
 
+    # Plot the results.
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D # This import is necessary for the projection = "3d" option below, even though
+                                            # no function from this import is used.
 
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1, projection = "3d")
+    #fig, ax = plt.subplots(1, 1, projection = "3d")
+    for i in includedSlices:
+        endoLV = prepareContour("endoLV", SAContours, i)
+        epiLV = prepareContour("epiLV", SAContours, i)
+        endoRVFW = prepareContour("endoRVFW", SAContours, i)
+        epiRVFW = prepareContour("epiRVFW", SAContours, i)
+        RVSept = prepareContour("RVSept", SAContours, i)
+        RVInserts = prepareContour("RVInserts", SAinserts, i)
 
+        ax.scatter(endoLV[:, 0], endoLV[:, 1], endoLV[:, 2], marker = ".", color = "green")
+        ax.scatter(epiLV[:, 0], epiLV[:, 1], epiLV[:, 2], marker = ".", color = "blue")
+        ax.scatter(endoRVFW[:, 0], endoRVFW[:, 1], endoRVFW[:, 2], marker = ".", color = "red")
+        ax.scatter(epiRVFW[:, 0], epiRVFW[:, 1], epiRVFW[:, 2], marker = ".", color = "yellow")
+        ax.scatter(RVSept[:, 0], RVSept[:, 1], RVSept[:, 2], marker = ".", color = "blue")
 
+    plt.show()
+
+def prepareContour(varName, contoursDict, sliceIndex):
+    result = contoursDict[varName]
+    result = np.squeeze(result[:, :, sliceIndex])
+    return ut.removeZerorows(result)
 
 class Config(NamedTuple):
     rvWallThickness: int # RV wall thickness, in [mm] (don't have contours); e.g. 3 ==> downsample by taking every third point
