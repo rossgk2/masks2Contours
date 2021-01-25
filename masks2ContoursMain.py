@@ -58,8 +58,8 @@ def main():
     slicesToKeep = np.squeeze(SAendoLVContours[0, 0, :])
     slicesToOmit = np.logical_not(slicesToKeep).astype(int) # is 1 wherever slicesToKeep was 0.
 
-    numSlices = SAendoLVContours.shape[2]
-    includedSlices = np.linspace(1, numSlices, numSlices)
+    numSASlices = SAendoLVContours.shape[2]
+    includedSlices = np.linspace(1, numSASlices, numSASlices)
     includedSlices = ut.deleteHelper(includedSlices, slicesToOmit, axis = 0).astype(int)
     includedSlices = includedSlices - 1 # convert to Python indexing
 
@@ -69,11 +69,14 @@ def main():
     epiPts2 = np.squeeze(LAepiLVContours[:, :, 2])
     apex = mut.calcApex(epiPts1, epiPts2)
 
+    # =========================
     # Plot the results.
+    # =========================
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D # This import is necessary for the projection = "3d" option below, even though
                                             # no function from this import is used.
 
+    # Short axis contours.
     fig, ax = plt.subplots(1, 1, subplot_kw = {"projection" : "3d"})
     for i in includedSlices:
         endoLV = prepareContour("endoLV", SAContours, i)
@@ -89,7 +92,30 @@ def main():
         ax.scatter(epiRVFW[:, 0], epiRVFW[:, 1], epiRVFW[:, 2], marker = ".", color = "yellow")
         ax.scatter(RVSept[:, 0], RVSept[:, 1], RVSept[:, 2], marker = ".", color = "blue")
 
-    plt.show() # Must use plt.show() instead of fig.show(). Might have something to do with https://github.com/matplotlib/matplotlib/issues/13101#issuecomment-452032924
+    # Valve points.
+    ax.scatter(mv[:, 0], mv[:, 1], mv[:, 2], color = "black")
+    ax.scatter(av[:, 0], av[:, 1], av[:, 2], color = "cyan")
+    ax.scatter(tv[:, 0], tv[:, 1], tv[:, 2], color = "magenta")
+
+    # Apex.
+    ax.scatter(apex[0], apex[1], apex[2], color = "black")
+
+    # Long axis contours.
+    numLASlices = LAContours["endoLV"].shape[2]
+    for i in range(numLASlices):
+        endoLV = prepareContour("endoLV", LAContours, i)
+        epiLV = prepareContour("epiLV", LAContours, i)
+        endoRVFW = prepareContour("endoRVFW", LAContours, i)
+        epiRVFW = prepareContour("epiRVFW", LAContours, i)
+        RVSept = prepareContour("RVSept", LAContours, i)
+
+        ax.scatter(endoLV[:, 0], endoLV[:, 1], endoLV[:, 2], marker = ".", color = "green")
+        ax.scatter(epiLV[:, 0], epiLV[:, 1], epiLV[:, 2], marker = ".", color = "blue")
+        ax.scatter(endoRVFW[:, 0], endoRVFW[:, 1], endoRVFW[:, 2], marker = ".", color = "red")
+        ax.scatter(epiRVFW[:, 0], epiRVFW[:, 1], epiRVFW[:, 2], marker = ".", color = "yellow")
+        ax.scatter(RVSept[:, 0], RVSept[:, 1], RVSept[:, 2], marker = ".", color = "blue")
+
+    plt.show()  # Must use plt.show() instead of fig.show(). Might have something to do with https://github.com/matplotlib/matplotlib/issues/13101#issuecomment-452032924
 
 def prepareContour(varName, contoursDict, sliceIndex):
     result = contoursDict[varName]
@@ -102,22 +128,5 @@ class Config(NamedTuple):
     upperBdNumContourPts: int # An upper bound on the number of contour points.
     PLOT: bool
     LOAD_MATLAB_VARS: bool
-
-# [Load results by returning from function]
-
-# This function displays "prompt" to the user and waits for the user to enter input. As long as the user enters
-# incorrect input, "errorMessage" and "prompt" are displayed.
-#
-# The argument "goodInput" must be a boolean function accepting one argument. The intention is that, given a string
-# variable called input, goodInput(input) is True when input is valid and false otherwise.
-def getCorrectInput(goodInput, prompt, errorMessage):
-    validInput = False
-    while not validInput:
-        returnThis = input(prompt)
-        validInput = goodInput(returnThis)
-        if not validInput:
-            print(errorMessage)
-
-    return returnThis
 
 main()
