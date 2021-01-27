@@ -346,7 +346,7 @@ def subplotHelper(ax, title, maskSlice, contours, color, size = .5, swap = False
     return ax.scatter(x = xx, y = yy, s = size, c = color) # Most uses of this function will not make use of the output returned.
 
 # Helper function used by masks2ContoursSA() and masks2ContoursLA().
-# If returnAll = True, returns (seg, transform, pixScale, pixSpacing). Otherwise, returns seg.
+# Returns (seg, transform, pixScale, pixSpacing).
 def readFromNIFTI(segName, frameNum, returnAll = True):
     # Load short axis segmentations and header info
     _seg = nib.load(segName)
@@ -356,24 +356,21 @@ def readFromNIFTI(segName, frameNum, returnAll = True):
     if seg.ndim > 3:  # if segmentation includes all time points
         seg = seg[:, :, :, frameNum].squeeze()
 
-    if returnAll:
-        # Obtain the 4x4 homogeneous affine matrix
-        transform = _seg.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
-        transform[:2, :] = transform[:2, :] * -1  # This edit has to do with RAS system in Nifti files
+    # Obtain the 4x4 homogeneous affine matrix
+    transform = _seg.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
+    transform[:2, :] = transform[:2, :] * -1  # This edit has to do with RAS system in Nifti files
 
-        # Initialize pixScale. In the MATLAB script, pixScale was a column vector. Here, it will be a row vector.
-        pixdim = info.structarr["pixdim"][1:3 + 1]
-        if np.isclose(np.linalg.norm(transform[:, 0]), 1):
-            pixScale = pixdim  # Here we are manually going into the header file's data. This is somewhat dangerous- maybe it can be done a better way?
-        else:
-            pixScale = np.array([1, 1, 1])
-
-        # Initialize some more things.
-        pixSpacing = pixdim[0]
-
-        return (seg, transform, pixScale, pixSpacing)
+    # Initialize pixScale. In the MATLAB script, pixScale was a column vector. Here, it will be a row vector.
+    pixdim = info.structarr["pixdim"][1:3 + 1]
+    if np.isclose(np.linalg.norm(transform[:, 0]), 1):
+        pixScale = pixdim  # Here we are manually going into the header file's data. This is somewhat dangerous- maybe it can be done a better way?
     else:
-        return seg
+        pixScale = np.array([1, 1, 1])
+
+    # Initialize some more things.
+    pixSpacing = pixdim[0]
+
+    return (seg, transform, pixScale, pixSpacing)
 
 # mask2D is a 2D ndarray, i.e it is a m x n ndarray for some m, n. This function returns a m x 2 ndarray, where
 # each row in the array represents a point in the contour around mask2D.

@@ -9,6 +9,10 @@ from typing import NamedTuple
 from masks2Contours import masks2ContoursSA, masks2ContoursLA
 
 def main():
+    # For debugging:
+    # https://github.com/Project-MONAI/MONAI/blob/3d5554f650b2d1acba20833b35fd996b4e7ae6a5/monai/data/utils.py#L294
+    # https://github.com/ericspod/Eidolon/blob/c149164b60316a6f39f94494c60a9ee81178932a/eidolon/plugins/NiftiPlugin.py#L81
+
     use_default_filepaths = True
 
     # Orientation for viewing plots
@@ -115,6 +119,7 @@ def main():
         ax.scatter(epiRVFW[:, 0], epiRVFW[:, 1], epiRVFW[:, 2], marker = ".", color = "yellow")
         ax.scatter(RVSept[:, 0], RVSept[:, 1], RVSept[:, 2], marker = ".", color = "blue")
 
+    ax.view_init(elev = el, azim= az)
     plt.show()  # Must use plt.show() instead of fig.show(). Might have something to do with https://github.com/matplotlib/matplotlib/issues/13101#issuecomment-452032924
 
 def prepareContour(varName, contoursDict, sliceIndex):
