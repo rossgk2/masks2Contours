@@ -81,11 +81,10 @@ def masks2ContoursSA(segName, resultsDir, frameNum, config):
             "RVSept" : RVSContours } ,
             {"RVInserts" : RVInserts, "RVInsertsWeights" : RVInsertsWeights})
 
-def masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config):
+def masks2ContoursLA(LA_segs, resultsDir, frameNum, numSlices, config):
     # Precompute (more accurately, "pre-read") endoLV, epiLV, endoRV for each slice.
     # Also precompute transform, pixScale, and pix_spacing for each slice.
     (endoLVList, epiLVList, endoRVList, transformList, pixScaleList, pixSpacingList) = ([], [], [], [], [], [])
-    numSlices = len(LA_names)
     for i in range(0, numSlices):
         (seg, transform, pixScale, pixSpacing) = readFromNIFTI(LA_segs[i], frameNum)
         endoLVList.append(np.squeeze(seg == 1))
