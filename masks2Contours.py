@@ -355,7 +355,7 @@ def subplotHelper(ax, title, maskSlice, contours, color, size = .5, swap = False
 def readFromNIFTI(segName, frameNum):
     # Load NIFTI image and its header.
     img = nib.load(segName)
-    #img = MONAIutils.correct_nifti_header_if_necessary(img)
+    img = MONAIutils.correct_nifti_header_if_necessary(img)
     hdr = img.header
 
    # Get the segmentation from the NIFTI file.
