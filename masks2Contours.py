@@ -15,7 +15,7 @@ import scipy.spatial.transform as sst
 # Note: axes are swapped when contours loaded with Python, for some reason. This is accounted for in this function, but
 # is still something to investigate.
 
-def masks2ContoursSA(segName, imgName, resultsDir, frameNum, config):
+def masks2ContoursSA(segName, resultsDir, frameNum, config):
     # Read the 3D segmentation, transform matrix, and other geometry info from the NIFTI file.
     (seg, transform, pixScale, pixSpacing) = readFromNIFTI(segName, frameNum)
     numSlices = seg.shape[2]
@@ -374,7 +374,7 @@ def readFromNIFTI(segName, frameNum):
     else:
         pixScale = np.array([1, 1, 1])
 
-    # Initialize some more things.
+    # Initialize one last thing.
     pixSpacing = pixdim[0]
 
     return (seg, transform, pixScale, pixSpacing)
