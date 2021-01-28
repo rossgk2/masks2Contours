@@ -1,11 +1,16 @@
+import math
+
 import alphashape
 import numpy as np
 import nibabel as nib
 from skimage import morphology
 from skimage import measure
 import matplotlib.pyplot as plt
+
+import MONAIutils
 import masks2ContoursUtil as ut
 from SelectFromCollection import SelectFromCollection
+import scipy.spatial.transform as sst
 
 # Note: axes are swapped when contours loaded with Python, for some reason. This is accounted for in this function, but
 # is still something to investigate.
@@ -347,21 +352,23 @@ def subplotHelper(ax, title, maskSlice, contours, color, size = .5, swap = False
 
 # Helper function used by masks2ContoursSA() and masks2ContoursLA().
 # Returns (seg, transform, pixScale, pixSpacing).
-def readFromNIFTI(segName, frameNum, returnAll = True):
-    # Load short axis segmentations and header info
-    _seg = nib.load(segName)
-    seg = _seg.get_fdata()
-    info = _seg.header
+def readFromNIFTI(segName, frameNum):
+    # Load NIFTI image and its header.
+    img = nib.load(segName)
+    img = MONAIutils.correct_nifti_header_if_necessary(img)
+    hdr = img.header
 
+   # Get the segmentation from the NIFTI file.
+    seg = img.get_fdata()
     if seg.ndim > 3:  # if segmentation includes all time points
         seg = seg[:, :, :, frameNum].squeeze()
 
-    # Obtain the 4x4 homogeneous affine matrix
-    transform = _seg.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
+    # Obtain the 4x4 homogeneous affine matrix from the NIFTI file.
+    transform = img.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
     transform[:2, :] = transform[:2, :] * -1  # This edit has to do with RAS system in Nifti files
 
     # Initialize pixScale. In the MATLAB script, pixScale was a column vector. Here, it will be a row vector.
-    pixdim = info.structarr["pixdim"][1:3 + 1]
+    pixdim = hdr.structarr["pixdim"][1:3 + 1]
     if np.isclose(np.linalg.norm(transform[:, 0]), 1):
         pixScale = pixdim  # Here we are manually going into the header file's data. This is somewhat dangerous- maybe it can be done a better way?
     else:
