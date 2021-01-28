@@ -41,7 +41,7 @@ def main():
     #
     # SAContours and LAContours are dicts whose keys are strings such as "LVendo" or "RVSept" and whose values are
     # m x 2 ndarrays containing the contour points. SAinserts is a dict with the two keys "RVInserts" and "RVInsertsWeights".
-    (SAContours, SAinserts) = masks2ContoursSA(segName, imgName, resultsDir, frameNum, config)
+    (SAContours, SAinserts) = masks2ContoursSA(segName, resultsDir, frameNum, config)
     LAContours = masks2ContoursLA(LA_names, LA_segs, resultsDir, frameNum, config)
 
     # Get valve points for mitral valve (mv), tricuspid valve (tv), aortic valve (av), and pulmonary valve (pv).
