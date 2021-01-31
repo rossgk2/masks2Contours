@@ -363,8 +363,34 @@ def readFromNIFTI(segName, frameNum):
         seg = seg[:, :, :, frameNum].squeeze()
 
     # Obtain the 4x4 homogeneous affine matrix from the NIFTI file.
-    transform = img.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
-    transform[:2, :] = transform[:2, :] * -1  # This edit has to do with RAS system in Nifti files
+    #transform = img.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
+    #transform[:2, :] = transform[:2, :] * -1  # This edit has to do with RAS system in Nifti files.
+
+    ######################################## NEW ROTATION MATRIX FIXES BEGIN HERE ####################################
+    from nibabel.quaternions import quat2mat
+    q = hdr.get_qform_quaternion()
+    rot = quat2mat(q)
+    rot[(0, 1), :] *= -1
+
+    # rotate around the z axis by pi/2 radians
+    rz90 = np.array([[0., -1., 0.],
+                     [1., 0., 0.],
+                     [0., 0., 1.]])
+
+    # multiply matrices together to get final matrix
+    rot = rot @ rz90
+
+    # rotation matrix is done. now prepare translation
+    transl = np.array([float(hdr["qoffset_x"]), float(hdr["qoffset_y"]), float(hdr["qoffset_z"])])
+    transl = rz90 @ transl
+    transl = np.append(transl, 1)
+
+    transform = np.zeros((4, 4))
+    transform[0:3, 0:3] = rot
+    transform[:, 3] = transl
+
+    print(transform) # for debug
+    ######################################## NEW ROTATION MATRIX FIXES END HERE ####################################
 
     # Initialize pixScale. In the MATLAB script, pixScale was a column vector. Here, it will be a row vector.
     pixdim = hdr.structarr["pixdim"][1:3 + 1]
