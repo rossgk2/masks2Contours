@@ -128,14 +128,14 @@ def masks2ContoursLA(LA_segs, resultsDir, frameNum, numSlices, config):
             "epiRVFW": epiRVFWContours,
             "RVSept": RVSContours}
 
-def slice2Contours(inputsLists, outputsList, config, figaxs, sliceIndex, SA_LA):
+def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
     # Check validity of SA_LA.
     SA_LA = SA_LA.lower()
     if not(SA_LA == "sa" or SA_LA == "la"):
         raise ValueError("SA_LA must either be \"SA\" or \"LA\".")
 
     # Unpack tuples passed in as input.
-    (endoLV, epiLV, endoRV, transform, pixScale, pixSpacing) = inputsLists
+    (endoLV, epiLV, endoRV, transform, pixScale, pixSpacing) = inputsList
 
     if SA_LA == "sa":
         (endoLVContours, epiLVContours, RVSContours, endoRVFWContours, epiRVFWContours, RVInserts) = outputsList
@@ -367,29 +367,10 @@ def readFromNIFTI(segName, frameNum):
     #transform[:2, :] = transform[:2, :] * -1  # This edit has to do with RAS system in Nifti files.
 
     ######################################## NEW ROTATION MATRIX FIXES BEGIN HERE ####################################
-    from nibabel.quaternions import quat2mat
-    q = hdr.get_qform_quaternion()
-    rot = quat2mat(q)
-    rot[(0, 1), :] *= -1
 
-    # rotate around the z axis by pi/2 radians
-    rz90 = np.array([[0., -1., 0.],
-                     [1., 0., 0.],
-                     [0., 0., 1.]])
+    transform = hdr2mat(hdr)
+    print(transform)
 
-    # multiply matrices together to get final matrix
-    rot = rot @ rz90
-
-    # rotation matrix is done. now prepare translation
-    transl = np.array([float(hdr["qoffset_x"]), float(hdr["qoffset_y"]), float(hdr["qoffset_z"])])
-    transl = rz90 @ transl
-    transl = np.append(transl, 1)
-
-    transform = np.zeros((4, 4))
-    transform[0:3, 0:3] = rot
-    transform[:, 3] = transl
-
-    print(transform) # for debug
     ######################################## NEW ROTATION MATRIX FIXES END HERE ####################################
 
     # Initialize pixScale. In the MATLAB script, pixScale was a column vector. Here, it will be a row vector.
@@ -403,6 +384,64 @@ def readFromNIFTI(segName, frameNum):
     pixSpacing = pixdim[0]
 
     return (seg, transform, pixScale, pixSpacing)
+
+def to_matrix(x, y, z, w):
+    """Convert the quaternion (x,y,z,w) to a 4x4 matrix."""
+    length = np.sqrt(x ** 2 + y ** 2 + z ** 2 + w ** 2)
+    out = np.eye(3)
+    x /= length
+    y /= length
+    z /= length
+    w /= length
+
+    x2: float = x * x
+    y2: float = y * y
+    z2: float = z * z
+    xy: float = x * y
+    xz: float = x * z
+    yz: float = y * z
+    wz: float = w * z
+    wx: float = w * x
+    wy: float = w * y
+
+    out[0] = 1.0 - 2.0 * (y2 + z2), 2.0 * (xy - wz), 2.0 * (xz + wy)
+    out[1] = 2.0 * (xy + wz), 1.0 - 2.0 * (x2 + z2), 2.0 * (yz - wx)
+    out[2] = 2.0 * (xz - wy), 2.0 * (yz + wx), 1.0 - 2.0 * (x2 + y2)
+
+    return out
+
+def hdr2mat(hdr):
+    pixdim = hdr['pixdim']
+    dim = hdr['dim']
+    b = float(hdr['quatern_b'])
+    c = float(hdr['quatern_c'])
+    d = float(hdr['quatern_d'])
+    a = np.sqrt(max(0, 1.0 - (b ** 2 + c ** 2 + d ** 2)))
+
+    rot_mat = to_matrix(-c, b, a, -d)
+
+    # rotate around the z axis by pi/.2 radians
+    rz90 = np.array([
+        [0., -1., 0.],
+        [1., 0., 0.],
+        [0., 0., 1.]
+    ])
+
+    # multiply matrices together to get final matrix
+    rot_mat = np.dot(rot_mat, rz90)
+
+    qfac = float(pixdim[0]) or 1.0
+
+    mat = np.eye(4)
+    mat[:3, :3] = rot_mat
+    mat[0, :3] *= pixdim[1] * dim[1]
+    mat[1, :3] *= pixdim[2] * dim[2]
+    mat[2, :3] *= pixdim[3] * qfac * dim[3]
+    mat[0, 3] = -float(hdr['qoffset_x'])
+    mat[1, 3] = -float(hdr['qoffset_y'])
+    mat[2, 3] = float(hdr['qoffset_z'])
+
+    return mat
 
 # mask2D is a 2D ndarray, i.e it is a m x n ndarray for some m, n. This function returns a m x 2 ndarray, where
 # each row in the array represents a point in the contour around mask2D.
