@@ -150,6 +150,13 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
     LVepiSContours = getContoursFromMask(epiLV, irregMaxSize = 20)
     RVendoSContours = getContoursFromMask(endoRV, irregMaxSize = 20)
 
+    ############ DEBUG ##########
+    import scipy.io as sio
+    file = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\out\\tmp_endoLVLA_slices\\tmp_endoLVLA_slice_1.mat"
+    tmp_endoLVLA = sio.loadmat(file)["tmp_endoLV"]
+    # LVendoSContours = tmp_endoLVLA
+    #############################
+
     # Differentiate contours for RVFW (free wall) and RVS (septum).
     [RVSeptSContours, ia, ib] = ut.sharedRows(LVepiSContours, RVendoSContours)
     RVFWSContours = RVendoSContours
@@ -216,15 +223,15 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
             figI, axI = plt.subplots() # I for "inspection"
             title = "Select points you would like to remove. Click and drag to lasso select.\n The zoom tool may also be helpful."
 
-            pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(endoRV), contours = RVSeptSContours, color = "yellow",
-                                size = 20, swap = True) # maybe use something other than RVSeptSContours?
+            pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(endoRV), contours = RVFWSContours, color = "green",
+                                size = 20, swap = True)
 
             # Create a lasso selector. It automatically is able to be used after plt.show().
             lassoSelector = SelectFromCollection(figI, axI, pts)
             plt.show() # Important to use plt.show() instead of figI.show() so that the event loop runs. See https://github.com/matplotlib/matplotlib/issues/13101#issuecomment-452032924
 
             # Remove the points that were selected from the contour.
-            RVSeptSContours = ut.deleteHelper(RVSeptSContours, lassoSelector.ind, axis = 0)
+            RVSeptSContours = ut.deleteHelper(RVFWSContours, lassoSelector.ind, axis = 0)
 
             # After the user has pressed "Enter", control will be returned to this point.
 
@@ -270,6 +277,8 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
             tmp_RV = np.vstack((RVFWSContours, RVSeptSContours))
             alpha = alphashape.optimizealpha(tmp_RV)
             shape = alphashape.alphashape(tmp_RV, alpha * 2)
+
+            # FINISH THIS else STATEMENT #
 
             # https://gis.stackexchange.com/questions/208546/check-if-a-point-falls-within-a-multipolygon-with-python
 
@@ -340,14 +349,13 @@ def subplotHelper(ax, title, maskSlice, contours, color, size = .5, swap = False
     ax.imshow(X = maskSlice, cmap = "gray")
 
     # Rotate and flip the contours if necessary.
-    xx = contours[:, 0]
-    yy = contours[:, 1]
-
-    if swap: # Swap xx and yy.
-        xx, yy = yy, xx
+    if swap:
+        contours[:, [0, 1]] = contours[:, [1, 0]]
 
     # Scatterplot. "s" is the size of the points in the scatterplot.
-    return ax.scatter(x = xx, y = yy, s = size, c = color) # Most uses of this function will not make use of the output returned.
+    return ax.scatter(x = contours[:, 0], y = contours[:, 1], s = size, c = color) # Most uses of this function will not make use of the output returned.
+
+c = 0
 
 # Helper function used by masks2ContoursSA() and masks2ContoursLA().
 # Returns (seg, transform, pixScale, pixSpacing).
@@ -368,8 +376,29 @@ def readFromNIFTI(segName, frameNum):
 
     ######################################## NEW ROTATION MATRIX FIXES BEGIN HERE ####################################
 
-    transform = hdr2mat(hdr)
-    print(transform)
+    global c
+    if c == 0:
+        transform = np.array([[0.5558, -0.6271, -6.5181, 119.9210],
+                              [1.3206, 0.0074, 3.2221, -224.4100],
+                              [-0.1895, -1.2999, 3.3365, 133.4400],
+                              [0, 0, 0, 1]])
+    elif c == 1:
+        transform = np.array([[0.9144, 0.0259, 0.4040, -169.4582],
+                              [-0.4037, -0.0150, 0.9148, 71.5884],
+                              [0.0297, -0.9996, -0.0032, 161.6910],
+                              [0, 0, 0, 1]])
+    elif c == 2:
+        transform = np.array([[0.8289, -0.0599, 0.5561, -101.4829],
+                              [0.0037, 0.9948, 0.1016, -189.5928],
+                              [-0.5593, -0.0821, 0.8249, 98.0028],
+                              [0, 0, 0, 1]])
+    elif c == 3:
+        transform = np.array([[0.9802, 0.0990, 0.1716, -141.2545],
+                              [0.0373, 0.7583, -0.6509, -148.3054],
+                              [-0.1945, 0.6444, 0.7395, -92.4032],
+                              [0, 0, 0, 1]])
+
+    #transform = hdr2mat(hdr)
 
     ######################################## NEW ROTATION MATRIX FIXES END HERE ####################################
 
