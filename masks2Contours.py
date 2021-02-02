@@ -150,6 +150,26 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
     LVepiSContours = getContoursFromMask(epiLV, irregMaxSize = 20)
     RVendoSContours = getContoursFromMask(endoRV, irregMaxSize = 20)
 
+    ############ DEBUG ##########
+    import scipy.io as sio
+    resultsDir = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\out\\"
+    SA = sio.loadmat(resultsDir + "SA_contour_points_FR1.mat")
+    LA = sio.loadmat(resultsDir + "LA_contour_points_FR1.mat")
+
+    #save(sprintf('%s/SA_contour_points_FR%d.mat', resultsDir, frameNum), 'endoLVContours', 'epiLVContours', 'endoRVFWContours', ...
+    #'epiRVFWContours', 'RVSContours', 'RVInserts', 'RVInsertsWeights');
+
+    #save(matName, 'endoLVContoursLA', 'epiLVContoursLA', 'endoRVFWContoursLA', 'epiRVFWContoursLA', 'RVSContoursLA');
+
+    dict = SA if SA_LA == "sa" else LA
+    suffix = "" if SA_LA == "sa" else "LA"
+
+    (endoLVContoursMAT, epiLVContoursMAT, endoRVFWContoursMAT, epiRVFWContoursMAT, RVSContoursMAT) \
+        = (dict["endoLVContours" + suffix], dict["epiLVContours" + suffix], dict["endoRVFWContours" + suffix],
+           dict["epiRVFWContours" + suffix], dict["RVSContours" + suffix])
+
+    #############################
+
     # Swap stuff!
     # swap = not config.LOAD_MATLAB_VARS if SA_LA == "sa" else True # LV endo, LV epi
     # swap = True # RV endo
@@ -162,13 +182,6 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         LVepiSContours[:, [0, 1]] = LVepiSContours[:, [1, 0]]
     if not RVEndoIsEmpty:
         RVendoSContours[:, [0, 1]] = RVendoSContours[:, [1, 0]]
-
-    ############ DEBUG ##########
-    import scipy.io as sio
-    file = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\out\\tmp_endoLVLA_slices\\tmp_endoLVLA_slice_1.mat"
-    tmp_endoLVLA = sio.loadmat(file)["tmp_endoLV"]
-    # LVendoSContours = tmp_endoLVLA
-    #############################
 
     # Differentiate contours for RVFW (free wall) and RVS (septum).
     [RVSeptSContours, ia, ib] = ut.sharedRows(LVepiSContours, RVendoSContours)
