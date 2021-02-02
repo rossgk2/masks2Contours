@@ -151,22 +151,20 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
     RVendoSContours = getContoursFromMask(endoRV, irregMaxSize = 20)
 
     ############ DEBUG ##########
+    # Load MATLAB variables.
     import scipy.io as sio
-    resultsDir = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\out\\"
-    SA = sio.loadmat(resultsDir + "SA_contour_points_FR1.mat")
-    LA = sio.loadmat(resultsDir + "LA_contour_points_FR1.mat")
+    resultsDir = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\out"
 
-    #save(sprintf('%s/SA_contour_points_FR%d.mat', resultsDir, frameNum), 'endoLVContours', 'epiLVContours', 'endoRVFWContours', ...
-    #'epiRVFWContours', 'RVSContours', 'RVInserts', 'RVInsertsWeights');
+    suffix = "LA" if SA_LA == "la" else ""
+    vars = ["tmp_endoLV", "tmp_epiLV", "tmp_endoRV"]
+    result = []
+    for x in vars:
+        fldr = resultsDir + "\\" + x + suffix + "_slices\\"
+        file = fldr + x + suffix + "_slice_" + str(sliceIndex + 1) + ".mat"
+        result.append(sio.loadmat(file)[x])
 
-    #save(matName, 'endoLVContoursLA', 'epiLVContoursLA', 'endoRVFWContoursLA', 'epiRVFWContoursLA', 'RVSContoursLA');
+    [LVendoMAT, LVepiMAT, RVendoMAT] = result
 
-    dict = SA if SA_LA == "sa" else LA
-    suffix = "" if SA_LA == "sa" else "LA"
-
-    (endoLVContoursMAT, epiLVContoursMAT, endoRVFWContoursMAT, epiRVFWContoursMAT, RVSContoursMAT) \
-        = (dict["endoLVContours" + suffix], dict["epiLVContours" + suffix], dict["endoRVFWContours" + suffix],
-           dict["epiRVFWContours" + suffix], dict["RVSContours" + suffix])
 
     #############################
 
