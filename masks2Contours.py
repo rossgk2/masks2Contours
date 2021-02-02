@@ -152,34 +152,37 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
 
     ############ DEBUG ##########
     # Load MATLAB variables.
-    import scipy.io as sio
-    resultsDir = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\out"
+    if config.LOAD_MATLAB_VARS:
+        import scipy.io as sio
+        resultsDir = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\out"
 
-    suffix = "LA" if SA_LA == "la" else ""
-    vars = ["tmp_endoLV", "tmp_epiLV", "tmp_endoRV"]
-    result = []
-    for x in vars:
-        fldr = resultsDir + "\\" + x + suffix + "_slices\\"
-        file = fldr + x + suffix + "_slice_" + str(sliceIndex + 1) + ".mat"
-        result.append(sio.loadmat(file)[x])
+        suffix = "LA" if SA_LA == "la" else ""
+        vars = ["tmp_endoLV", "tmp_epiLV", "tmp_endoRV"]
+        result = []
+        for x in vars:
+            fldr = resultsDir + "\\" + x + suffix + "_slices\\"
+            file = fldr + x + suffix + "_slice_" + str(sliceIndex + 1) + ".mat"
+            result.append(sio.loadmat(file)[x])
 
-    [LVendoMAT, LVepiMAT, RVendoMAT] = result
+        [LVendoMAT, LVepiMAT, RVendoMAT] = result
 
+        # Replace the Python vars with the MATLAB ones.
+        [LVendoSContours, LVepiSContours, RVendoSContours] = [LVendoMAT, LVepiMAT, RVendoMAT] # redundant, but gets point across best
 
     #############################
-
     # Swap stuff!
     # swap = not config.LOAD_MATLAB_VARS if SA_LA == "sa" else True # LV endo, LV epi
     # swap = True # RV endo
-    LVEndoIsEmpty = LVendoSContours is None or np.max(LVendoSContours.shape) <= 2
-    LVEpiIsEmpty = LVepiSContours is None or np.max(LVepiSContours.shape) <= 2
-    RVEndoIsEmpty = RVendoSContours is None or RVendoSContours.size == 0
-    if not LVEndoIsEmpty:
-        LVendoSContours[:, [0, 1]] = LVendoSContours[:, [1, 0]]
-    if not LVEpiIsEmpty:
-        LVepiSContours[:, [0, 1]] = LVepiSContours[:, [1, 0]]
-    if not RVEndoIsEmpty:
-        RVendoSContours[:, [0, 1]] = RVendoSContours[:, [1, 0]]
+    if not config.LOAD_MATLAB_VARS:
+        LVEndoIsEmpty = LVendoSContours is None or np.max(LVendoSContours.shape) <= 2
+        LVEpiIsEmpty = LVepiSContours is None or np.max(LVepiSContours.shape) <= 2
+        RVEndoIsEmpty = RVendoSContours is None or RVendoSContours.size == 0
+        if not LVEndoIsEmpty:
+            LVendoSContours[:, [0, 1]] = LVendoSContours[:, [1, 0]]
+        if not LVEpiIsEmpty:
+            LVepiSContours[:, [0, 1]] = LVepiSContours[:, [1, 0]]
+        if not RVEndoIsEmpty:
+            RVendoSContours[:, [0, 1]] = RVendoSContours[:, [1, 0]]
 
     # Differentiate contours for RVFW (free wall) and RVS (septum).
     [RVSeptSContours, ia, ib] = ut.sharedRows(LVepiSContours, RVendoSContours)
