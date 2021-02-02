@@ -150,6 +150,19 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
     LVepiSContours = getContoursFromMask(epiLV, irregMaxSize = 20)
     RVendoSContours = getContoursFromMask(endoRV, irregMaxSize = 20)
 
+    # Swap stuff!
+    # swap = not config.LOAD_MATLAB_VARS if SA_LA == "sa" else True # LV endo, LV epi
+    # swap = True # RV endo
+    LVEndoIsEmpty = LVendoSContours is None or np.max(LVendoSContours.shape) <= 2
+    LVEpiIsEmpty = LVepiSContours is None or np.max(LVepiSContours.shape) <= 2
+    RVEndoIsEmpty = RVendoSContours is None or RVendoSContours.size == 0
+    if not LVEndoIsEmpty:
+        LVendoSContours[:, [0, 1]] = LVendoSContours[:, [1, 0]]
+    if not LVEpiIsEmpty:
+        LVepiSContours[:, [0, 1]] = LVepiSContours[:, [1, 0]]
+    if not RVEndoIsEmpty:
+        RVendoSContours[:, [0, 1]] = RVendoSContours[:, [1, 0]]
+
     ############ DEBUG ##########
     import scipy.io as sio
     file = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\out\\tmp_endoLVLA_slices\\tmp_endoLVLA_slice_1.mat"
@@ -184,9 +197,8 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         # If a plot is desired and contours exist, plot the mask and contour. (Contours might not exist, i.e. LVendoSContours might be None, due to the recent updates).
         LVEndoIsEmptyAfterCleaning = LVendoSContours is None or LVendoSContours.size == 0
         if config.PLOT and not LVEndoIsEmptyAfterCleaning:
-            swap = not config.LOAD_MATLAB_VARS if SA_LA == "sa" else True
             subplotHelper(axs[0], title = "LV Endocardium", maskSlice = np.squeeze(endoLV),
-                          contours = LVendoSContours, color = "red", swap = swap)
+                          contours = LVendoSContours, color = "red")
             contoursToImageCoords(LVendoSContours, transform, pixScale, sliceIndex, endoLVContours, SA_LA)  # This call writes to "endoLVContours".
 
     # LV epi
@@ -202,9 +214,8 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         # If a plot is desired and contours exist, plot the mask and contour. (Contours might not exist, i.e. LVendoSContours might be None, due to the recent updates).
         LVEpiIsEmptyAfterCleaning = LVendoSContours is None or LVendoSContours.size == 0
         if config.PLOT and not LVEpiIsEmptyAfterCleaning:
-            swap = not config.LOAD_MATLAB_VARS if SA_LA == "sa" else True
             subplotHelper(axs[1], title = "LV Epicardium", maskSlice = np.squeeze(epiLV),
-                          contours = LVepiSContours, color = "blue", swap = swap)
+                          contours = LVepiSContours, color = "blue")
             contoursToImageCoords(LVepiSContours, transform, pixScale, sliceIndex, epiLVContours, SA_LA)  # This call writes to "epiLVContours".
 
     # RV
@@ -222,9 +233,7 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         if SA_LA == "la" and not RVEndoIsEmptyAfterCleaning:
             figI, axI = plt.subplots() # I for "inspection"
             title = "Select points you would like to remove. Click and drag to lasso select.\n The zoom tool may also be helpful."
-
-            pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(endoRV), contours = RVFWSContours, color = "green",
-                                size = 20, swap = True)
+            pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(endoRV), contours = RVFWSContours, color = "green", size = 20)
 
             # Create a lasso selector. It automatically is able to be used after plt.show().
             lassoSelector = SelectFromCollection(figI, axI, pts)
@@ -235,22 +244,22 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
 
             # After the user has pressed "Enter", control will be returned to this point.
 
-            # The fig.show() call many lines below will not work unless we steal some "dummy" figure's figure manager
+            # The fig.show() call at the very end of this function will not work unless we steal some "dummy" figure's figure manager
             # and give it to fig.
             #
             # This is because plt.close("all"), which is called by the callback function that responds
             # when "Enter" is pressed, destroys all figure managers owned by figures that are shown. (And we
             # unfortunately do have to use plt.close("all") in order to get the matplotlib event loop to exit).
             #
-            # This code was taken from https://stackoverflow.com/questions/31729948/matplotlib-how-to-show-a-figure-that-has-been-closed.
+            # The following code was taken from https://stackoverflow.com/questions/31729948/matplotlib-how-to-show-a-figure-that-has-been-closed.
             dummy = plt.figure()
             new_manager = dummy.canvas.manager
             new_manager.canvas.figure = fig
             fig.set_canvas(new_manager.canvas)
 
         if config.PLOT and not RVEndoIsEmptyAfterCleaning:
-            ps1 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = RVFWSContours, color ="green", swap = True)
-            ps2 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = RVSeptSContours, color ="yellow", swap = True)
+            ps1 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = RVSeptSContours, color ="yellow")
+            ps2 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = RVFWSContours, color ="green")
             subplotHelperMulti(axs[2], plotSettingsList = [ps1, ps2], title = "RV Endocardium")
 
         contoursToImageCoords(RVSeptSContours, transform, pixScale, sliceIndex, RVSContours, SA_LA)
@@ -329,28 +338,23 @@ def cleanContours(contours, downsample):
     return ut.removeFarPoints(contours)
 
 class PlotSettings:
-    def __init__(self, maskSlice, contours, color, swap = False):
+    def __init__(self, maskSlice, contours, color):
         self.maskSlice = maskSlice
         self.contours = contours
         self.color = color
-        self.swap = swap
 
 def subplotHelperMulti(ax, plotSettingsList, title):
     ax.clear()  # The way that the timing of ax.clear() is handled (with the "clear = False" default arg to subplotHelper()) is somewhat messy, and can probably be improved somehow.
     for ps in plotSettingsList:
-        subplotHelper(ax = ax, title = title, maskSlice = ps.maskSlice, contours = ps.contours, color = ps.color, swap = ps.swap, clear = False)
+        subplotHelper(ax = ax, title = title, maskSlice = ps.maskSlice, contours = ps.contours, color = ps.color, clear = False)
 
 # Helper function for creating subplots.
-def subplotHelper(ax, title, maskSlice, contours, color, size = .5, swap = False, clear = True):
+def subplotHelper(ax, title, maskSlice, contours, color, size = .5, clear = True):
     if clear:
         ax.clear()
 
     ax.set_title(title, loc = "center", fontsize = 10, wrap = True)
     ax.imshow(X = maskSlice, cmap = "gray")
-
-    # Rotate and flip the contours if necessary.
-    if swap:
-        contours[:, [0, 1]] = contours[:, [1, 0]]
 
     # Scatterplot. "s" is the size of the points in the scatterplot.
     return ax.scatter(x = contours[:, 0], y = contours[:, 1], s = size, c = color) # Most uses of this function will not make use of the output returned.
