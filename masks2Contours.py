@@ -330,8 +330,8 @@ def contoursToImageCoords(maskSlice, transform, pixScale, sliceIndex, contours, 
 
     for i in range(0, maskSlice.shape[0]):
         pts = np.array([maskSlice[i, 1], maskSlice[i, 0], thirdComp])
-        pix = pts * pixScale
-        tmp = transform @ np.append(pix, 1)
+        #pix = pts * pixScale
+        tmp = transform @ np.append(pts, 1)
         contours[i, :, sliceIndex] = tmp[0:3]
 
 # Helper function.
@@ -389,21 +389,20 @@ def readFromNIFTI(segName, frameNum):
     if seg.ndim > 3:  # if segmentation includes all time points
         seg = seg[:, :, :, frameNum].squeeze()
 
-    # Obtain the 4x4 homogeneous affine matrix from the NIFTI file.
-    #transform = img.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
-    #transform[:2, :] = transform[:2, :] * -1  # This edit has to do with RAS system in Nifti files.
-
     ######################################## NEW ROTATION MATRIX FIXES BEGIN HERE ####################################
-    global c
-    import scipy.io as sio
-    resultsDir = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\out\\"
-    if c == 0:
-        file = resultsDir + "transforms\\" + "transform_SA.mat"
-    else:
-        file = resultsDir + "transforms\\" + "transform_LA_{}.mat".format(c)
-    transform = sio.loadmat(file)["trans"]
+    # global c
+    # import scipy.io as sio
+    # resultsDir = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\out\\"
+    # if c == 0:
+    #     file = resultsDir + "transforms\\" + "transform_SA.mat"
+    # else:
+    #     file = resultsDir + "transforms\\" + "transform_LA_{}.mat".format(c)
+    # transform = sio.loadmat(file)["trans"]
+    #
+    # transform = transform.transpose()
 
-    transform = transform.transpose()
+    transform = img.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
+
     transform[0:2, :] = -transform[0:2, :] # This edit has to do with RAS system in Nifti
 
 
@@ -423,7 +422,7 @@ def readFromNIFTI(segName, frameNum):
     # Initialize one last thing.
     pixSpacing = pixdim[1]
 
-    c += 1
+    #c += 1
     return (seg, transform, pixScale, pixSpacing)
 
 def to_matrix(x, y, z, w):
