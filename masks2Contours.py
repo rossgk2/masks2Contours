@@ -389,29 +389,14 @@ def readFromNIFTI(segName, frameNum):
     if seg.ndim > 3:  # if segmentation includes all time points
         seg = seg[:, :, :, frameNum].squeeze()
 
-    ######################################## NEW ROTATION MATRIX FIXES BEGIN HERE ####################################
-    # global c
-    # import scipy.io as sio
-    # resultsDir = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\out\\"
-    # if c == 0:
-    #     file = resultsDir + "transforms\\" + "transform_SA.mat"
-    # else:
-    #     file = resultsDir + "transforms\\" + "transform_LA_{}.mat".format(c)
-    # transform = sio.loadmat(file)["trans"]
-    #
-    # transform = transform.transpose()
 
+    # Get the 4x4 homogeneous affine matrix.
     transform = img.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
-
     transform[0:2, :] = -transform[0:2, :] # This edit has to do with RAS system in Nifti
-
-
-    ######################################## NEW ROTATION MATRIX FIXES END HERE ####################################
 
     # Initialize pixScale. In the MATLAB script, pixScale was a column vector. Here, it will be a row vector.
     epsilon = .0001
     pixdim = hdr.structarr["pixdim"][1:3 + 1]
-    pixdim[2] /= 10 # Hacky "fix"
     if np.linalg.norm(transform[1:3 + 1, 0]) - 1 < epsilon:
         pixScale = pixdim  # Here we are manually going into the header file's data. This is somewhat dangerous- maybe it can be done a better way?
     else:
@@ -419,10 +404,11 @@ def readFromNIFTI(segName, frameNum):
 
     print(transform)
 
-    # Initialize one last thing.
+    # Initialize one last thing. In MATLAB, pix_spacing is info.PixelDimensions(1). After converting from 1-based
+    # indexing to 0-based indexing, one might think that that means pixSpacing should be pixdim[0], but this is not the
+    # case due to how nibabel stores NIFTI headers.
     pixSpacing = pixdim[1]
 
-    #c += 1
     return (seg, transform, pixScale, pixSpacing)
 
 def to_matrix(x, y, z, w):
