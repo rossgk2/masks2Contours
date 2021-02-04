@@ -1,21 +1,15 @@
-import math
-
 import alphashape
-import numpy as np
-import nibabel as nib
-from skimage import morphology
-from skimage import measure
 import matplotlib.pyplot as plt
+import nibabel as nib
+import numpy as np
+from skimage import measure
+from skimage import morphology
 
 import MONAIutils
 import masks2ContoursUtil as ut
 from SelectFromCollection import SelectFromCollection
-import scipy.spatial.transform as sst
 
-# Note: axes are swapped when contours loaded with Python, for some reason. This is accounted for in this function, but
-# is still something to investigate.
-
-def masks2ContoursSA(segName, resultsDir, frameNum, config):
+def masks2ContoursSA(segName, frameNum, config):
     # Read the 3D segmentation, transform matrix, and other geometry info from the NIFTI file.
     (seg, transform, pixScale, pixSpacing) = readFromNIFTI(segName, frameNum)
     numSlices = seg.shape[2]
@@ -169,10 +163,7 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         # Replace the Python vars with the MATLAB ones.
         [LVendoSContours, LVepiSContours, RVendoSContours] = [LVendoMAT, LVepiMAT, RVendoMAT] # redundant, but gets point across best
 
-    #############################
-    # Swap stuff!
-    # swap = not config.LOAD_MATLAB_VARS if SA_LA == "sa" else True # LV endo, LV epi
-    # swap = True # RV endo
+    # For some reason, it's necessary to swap the axes when nibabel is used to load the nifti files.
     if not config.LOAD_MATLAB_VARS:
         LVEndoIsEmpty = LVendoSContours is None or np.max(LVendoSContours.shape) <= 2
         LVEpiIsEmpty = LVepiSContours is None or np.max(LVepiSContours.shape) <= 2
@@ -330,7 +321,11 @@ def contoursToImageCoords(maskSlice, transform, pixScale, sliceIndex, contours, 
 
     for i in range(0, maskSlice.shape[0]):
         pts = np.array([maskSlice[i, 1], maskSlice[i, 0], thirdComp])
-        #pix = pts * pixScale
+
+        # In MATLAB, one would now do this elementwise multiplication: "pix = pts * pixScale". We do NOT
+        # do this here because nibabel's img.affine matrix (recall, transform = img.affine) has this step
+        # factored into it.
+
         tmp = transform @ np.append(pts, 1)
         contours[i, :, sliceIndex] = tmp[0:3]
 
@@ -352,12 +347,14 @@ def cleanContours(contours, downsample):
     # Remove points in the contours that are too far from the majority of the contour. (This probably happens due to holes in segmentation).
     return ut.removeFarPoints(contours)
 
+# Helper struct for passing arguments to subplotHelperMulti().
 class PlotSettings:
     def __init__(self, maskSlice, contours, color):
         self.maskSlice = maskSlice
         self.contours = contours
         self.color = color
 
+# Helper function for plotting points from different datasets on the same plot.
 def subplotHelperMulti(ax, plotSettingsList, title):
     ax.clear()  # The way that the timing of ax.clear() is handled (with the "clear = False" default arg to subplotHelper()) is somewhat messy, and can probably be improved somehow.
     for ps in plotSettingsList:
@@ -373,8 +370,6 @@ def subplotHelper(ax, title, maskSlice, contours, color, size = .5, clear = True
 
     # Scatterplot. "s" is the size of the points in the scatterplot.
     return ax.scatter(x = contours[:, 0], y = contours[:, 1], s = size, c = color) # Most uses of this function will not make use of the output returned.
-
-c = 0
 
 # Helper function used by masks2ContoursSA() and masks2ContoursLA().
 # Returns (seg, transform, pixScale, pixSpacing).

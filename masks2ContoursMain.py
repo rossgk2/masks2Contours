@@ -1,21 +1,16 @@
 from glob import glob
-import nibabel as nib
-import masks2ContoursMainUtil as mut
-import numpy as np
-import masks2ContoursUtil as ut
-
-import os
 from typing import NamedTuple
+
+import nibabel as nib
+import numpy as np
+
+import masks2ContoursMainUtil as mut
+import masks2ContoursUtil as ut
 from masks2Contours import masks2ContoursSA, masks2ContoursLA
 
+
 def main():
-    # For debugging:
-    # https://github.com/Project-MONAI/MONAI/blob/3d5554f650b2d1acba20833b35fd996b4e7ae6a5/monai/data/utils.py#L294
-    # https://github.com/ericspod/Eidolon/blob/c149164b60316a6f39f94494c60a9ee81178932a/eidolon/plugins/NiftiPlugin.py#L81
-
-    use_default_filepaths = True
-
-    np.set_printoptions(suppress = True) # Don't use scientific notation when printing out ndarrays.
+    np.set_printoptions(suppress = True) # For debugging: don't use scientific notation when printing out ndarrays.
 
     # Orientation for viewing plots
     az = 214.5268
@@ -43,7 +38,7 @@ def main():
     #
     # SAContours and LAContours are dicts whose keys are strings such as "LVendo" or "RVSept" and whose values are
     # m x 2 ndarrays containing the contour points. SAinserts is a dict with the two keys "RVInserts" and "RVInsertsWeights".
-    (SAContours, SAinserts) = masks2ContoursSA(segName, resultsDir, frameNum, config)
+    (SAContours, SAinserts) = masks2ContoursSA(segName, frameNum, config)
     LAContours = masks2ContoursLA(LA_segs, resultsDir, frameNum, numSlices = len(LA_names), config = config)
 
     # Get valve points for mitral valve (mv), tricuspid valve (tv), aortic valve (av), and pulmonary valve (pv).
@@ -79,8 +74,7 @@ def main():
     # Plot the results.
     # =========================
     import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d import Axes3D # This import is necessary for the projection = "3d" option below, even though
-                                            # no function from this import is used.
+    # no function from this import is used.
 
     # Short axis contours.
     fig, ax = plt.subplots(1, 1, subplot_kw = {"projection" : "3d"})
