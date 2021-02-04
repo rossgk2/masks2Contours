@@ -8,7 +8,7 @@ This is a Python port of MATLAB code for a joint University of Michigan and King
 
 Dr. Renee Miller of King's College London wrote the MATLAB code, and I am the author of the Python port.
 
-Here's the interface the user uses to manually check, slice by slice, the output.
+Here's the interface the user uses to manually check the output slice by slice.
 
 <img src = "images/SA.PNG" width = 300>
 
