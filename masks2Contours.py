@@ -150,6 +150,40 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
     LVepiSContours = getContoursFromMask(epiLV, irregMaxSize = 20)
     RVendoSContours = getContoursFromMask(endoRV, irregMaxSize = 20)
 
+    ############ DEBUG ##########
+    # Load MATLAB variables.
+    if config.LOAD_MATLAB_VARS:
+        import scipy.io as sio
+        resultsDir = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\out"
+
+        suffix = "LA" if SA_LA == "la" else ""
+        vars = ["tmp_endoLV", "tmp_epiLV", "tmp_endoRV"]
+        result = []
+        for x in vars:
+            fldr = resultsDir + "\\" + x + suffix + "_slices\\"
+            file = fldr + x + suffix + "_slice_" + str(sliceIndex + 1) + ".mat"
+            result.append(sio.loadmat(file)[x])
+
+        [LVendoMAT, LVepiMAT, RVendoMAT] = result
+
+        # Replace the Python vars with the MATLAB ones.
+        [LVendoSContours, LVepiSContours, RVendoSContours] = [LVendoMAT, LVepiMAT, RVendoMAT] # redundant, but gets point across best
+
+    #############################
+    # Swap stuff!
+    # swap = not config.LOAD_MATLAB_VARS if SA_LA == "sa" else True # LV endo, LV epi
+    # swap = True # RV endo
+    if not config.LOAD_MATLAB_VARS:
+        LVEndoIsEmpty = LVendoSContours is None or np.max(LVendoSContours.shape) <= 2
+        LVEpiIsEmpty = LVepiSContours is None or np.max(LVepiSContours.shape) <= 2
+        RVEndoIsEmpty = RVendoSContours is None or RVendoSContours.size == 0
+        if not LVEndoIsEmpty:
+            LVendoSContours[:, [0, 1]] = LVendoSContours[:, [1, 0]]
+        if not LVEpiIsEmpty:
+            LVepiSContours[:, [0, 1]] = LVepiSContours[:, [1, 0]]
+        if not RVEndoIsEmpty:
+            RVendoSContours[:, [0, 1]] = RVendoSContours[:, [1, 0]]
+
     # Differentiate contours for RVFW (free wall) and RVS (septum).
     [RVSeptSContours, ia, ib] = ut.sharedRows(LVepiSContours, RVendoSContours)
     RVFWSContours = RVendoSContours
@@ -177,9 +211,8 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         # If a plot is desired and contours exist, plot the mask and contour. (Contours might not exist, i.e. LVendoSContours might be None, due to the recent updates).
         LVEndoIsEmptyAfterCleaning = LVendoSContours is None or LVendoSContours.size == 0
         if config.PLOT and not LVEndoIsEmptyAfterCleaning:
-            swap = not config.LOAD_MATLAB_VARS if SA_LA == "sa" else True
             subplotHelper(axs[0], title = "LV Endocardium", maskSlice = np.squeeze(endoLV),
-                          contours = LVendoSContours, color = "red", swap = swap)
+                          contours = LVendoSContours, color = "red")
             contoursToImageCoords(LVendoSContours, transform, pixScale, sliceIndex, endoLVContours, SA_LA)  # This call writes to "endoLVContours".
 
     # LV epi
@@ -195,9 +228,8 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         # If a plot is desired and contours exist, plot the mask and contour. (Contours might not exist, i.e. LVendoSContours might be None, due to the recent updates).
         LVEpiIsEmptyAfterCleaning = LVendoSContours is None or LVendoSContours.size == 0
         if config.PLOT and not LVEpiIsEmptyAfterCleaning:
-            swap = not config.LOAD_MATLAB_VARS if SA_LA == "sa" else True
             subplotHelper(axs[1], title = "LV Epicardium", maskSlice = np.squeeze(epiLV),
-                          contours = LVepiSContours, color = "blue", swap = swap)
+                          contours = LVepiSContours, color = "blue")
             contoursToImageCoords(LVepiSContours, transform, pixScale, sliceIndex, epiLVContours, SA_LA)  # This call writes to "epiLVContours".
 
     # RV
@@ -215,35 +247,33 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         if SA_LA == "la" and not RVEndoIsEmptyAfterCleaning:
             figI, axI = plt.subplots() # I for "inspection"
             title = "Select points you would like to remove. Click and drag to lasso select.\n The zoom tool may also be helpful."
-
-            pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(endoRV), contours = RVSeptSContours, color = "yellow",
-                                size = 20, swap = True) # maybe use something other than RVSeptSContours?
+            pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(endoRV), contours = RVFWSContours, color = "green", size = 20)
 
             # Create a lasso selector. It automatically is able to be used after plt.show().
             lassoSelector = SelectFromCollection(figI, axI, pts)
             plt.show() # Important to use plt.show() instead of figI.show() so that the event loop runs. See https://github.com/matplotlib/matplotlib/issues/13101#issuecomment-452032924
 
             # Remove the points that were selected from the contour.
-            RVSeptSContours = ut.deleteHelper(RVSeptSContours, lassoSelector.ind, axis = 0)
+            RVSeptSContours = ut.deleteHelper(RVFWSContours, lassoSelector.ind, axis = 0)
 
             # After the user has pressed "Enter", control will be returned to this point.
 
-            # The fig.show() call many lines below will not work unless we steal some "dummy" figure's figure manager
+            # The fig.show() call at the very end of this function will not work unless we steal some "dummy" figure's figure manager
             # and give it to fig.
             #
             # This is because plt.close("all"), which is called by the callback function that responds
             # when "Enter" is pressed, destroys all figure managers owned by figures that are shown. (And we
             # unfortunately do have to use plt.close("all") in order to get the matplotlib event loop to exit).
             #
-            # This code was taken from https://stackoverflow.com/questions/31729948/matplotlib-how-to-show-a-figure-that-has-been-closed.
+            # The following code was taken from https://stackoverflow.com/questions/31729948/matplotlib-how-to-show-a-figure-that-has-been-closed.
             dummy = plt.figure()
             new_manager = dummy.canvas.manager
             new_manager.canvas.figure = fig
             fig.set_canvas(new_manager.canvas)
 
         if config.PLOT and not RVEndoIsEmptyAfterCleaning:
-            ps1 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = RVFWSContours, color ="green", swap = True)
-            ps2 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = RVSeptSContours, color ="yellow", swap = True)
+            ps1 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = RVSeptSContours, color ="yellow")
+            ps2 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = RVFWSContours, color ="green")
             subplotHelperMulti(axs[2], plotSettingsList = [ps1, ps2], title = "RV Endocardium")
 
         contoursToImageCoords(RVSeptSContours, transform, pixScale, sliceIndex, RVSContours, SA_LA)
@@ -271,6 +301,8 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
             alpha = alphashape.optimizealpha(tmp_RV)
             shape = alphashape.alphashape(tmp_RV, alpha * 2)
 
+            # FINISH THIS else STATEMENT #
+
             # https://gis.stackexchange.com/questions/208546/check-if-a-point-falls-within-a-multipolygon-with-python
 
             # countIN = inShape(a, RVepiSlice(:,1), RVepiSlice(:,2));
@@ -297,8 +329,9 @@ def contoursToImageCoords(maskSlice, transform, pixScale, sliceIndex, contours, 
         raise ValueError("SA_LA must either be \"SA\" or \"LA\".")
 
     for i in range(0, maskSlice.shape[0]):
-        pix = np.array([maskSlice[i, 1], maskSlice[i, 0], thirdComp]) * pixScale
-        tmp = transform @ np.append(pix, 1)
+        pts = np.array([maskSlice[i, 1], maskSlice[i, 0], thirdComp])
+        #pix = pts * pixScale
+        tmp = transform @ np.append(pts, 1)
         contours[i, :, sliceIndex] = tmp[0:3]
 
 # Helper function.
@@ -320,34 +353,28 @@ def cleanContours(contours, downsample):
     return ut.removeFarPoints(contours)
 
 class PlotSettings:
-    def __init__(self, maskSlice, contours, color, swap = False):
+    def __init__(self, maskSlice, contours, color):
         self.maskSlice = maskSlice
         self.contours = contours
         self.color = color
-        self.swap = swap
 
 def subplotHelperMulti(ax, plotSettingsList, title):
     ax.clear()  # The way that the timing of ax.clear() is handled (with the "clear = False" default arg to subplotHelper()) is somewhat messy, and can probably be improved somehow.
     for ps in plotSettingsList:
-        subplotHelper(ax = ax, title = title, maskSlice = ps.maskSlice, contours = ps.contours, color = ps.color, swap = ps.swap, clear = False)
+        subplotHelper(ax = ax, title = title, maskSlice = ps.maskSlice, contours = ps.contours, color = ps.color, clear = False)
 
 # Helper function for creating subplots.
-def subplotHelper(ax, title, maskSlice, contours, color, size = .5, swap = False, clear = True):
+def subplotHelper(ax, title, maskSlice, contours, color, size = .5, clear = True):
     if clear:
         ax.clear()
 
     ax.set_title(title, loc = "center", fontsize = 10, wrap = True)
     ax.imshow(X = maskSlice, cmap = "gray")
 
-    # Rotate and flip the contours if necessary.
-    xx = contours[:, 0]
-    yy = contours[:, 1]
-
-    if swap: # Swap xx and yy.
-        xx, yy = yy, xx
-
     # Scatterplot. "s" is the size of the points in the scatterplot.
-    return ax.scatter(x = xx, y = yy, s = size, c = color) # Most uses of this function will not make use of the output returned.
+    return ax.scatter(x = contours[:, 0], y = contours[:, 1], s = size, c = color) # Most uses of this function will not make use of the output returned.
+
+c = 0
 
 # Helper function used by masks2ContoursSA() and masks2ContoursLA().
 # Returns (seg, transform, pixScale, pixSpacing).
@@ -362,86 +389,24 @@ def readFromNIFTI(segName, frameNum):
     if seg.ndim > 3:  # if segmentation includes all time points
         seg = seg[:, :, :, frameNum].squeeze()
 
-    # Obtain the 4x4 homogeneous affine matrix from the NIFTI file.
-    #transform = img.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
-    #transform[:2, :] = transform[:2, :] * -1  # This edit has to do with RAS system in Nifti files.
-
-    ######################################## NEW ROTATION MATRIX FIXES BEGIN HERE ####################################
-
-    transform = hdr2mat(hdr)
-    print(transform)
-
-    ######################################## NEW ROTATION MATRIX FIXES END HERE ####################################
+    # Get the 4x4 homogeneous affine matrix.
+    transform = img.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
+    transform[0:2, :] = -transform[0:2, :] # This edit has to do with RAS system in Nifti
 
     # Initialize pixScale. In the MATLAB script, pixScale was a column vector. Here, it will be a row vector.
+    epsilon = .0001
     pixdim = hdr.structarr["pixdim"][1:3 + 1]
-    if np.isclose(np.linalg.norm(transform[:, 0]), 1):
+    if np.linalg.norm(transform[1:3 + 1, 0]) - 1 < epsilon:
         pixScale = pixdim  # Here we are manually going into the header file's data. This is somewhat dangerous- maybe it can be done a better way?
     else:
         pixScale = np.array([1, 1, 1])
 
-    # Initialize one last thing.
-    pixSpacing = pixdim[0]
+    # Initialize one last thing. In MATLAB, pix_spacing is info.PixelDimensions(1). After converting from 1-based
+    # indexing to 0-based indexing, one might think that that means pixSpacing should be pixdim[0], but this is not the
+    # case due to how nibabel stores NIFTI headers.
+    pixSpacing = pixdim[1]
 
     return (seg, transform, pixScale, pixSpacing)
-
-def to_matrix(x, y, z, w):
-    """Convert the quaternion (x,y,z,w) to a 4x4 matrix."""
-    length = np.sqrt(x ** 2 + y ** 2 + z ** 2 + w ** 2)
-    out = np.eye(3)
-    x /= length
-    y /= length
-    z /= length
-    w /= length
-
-    x2: float = x * x
-    y2: float = y * y
-    z2: float = z * z
-    xy: float = x * y
-    xz: float = x * z
-    yz: float = y * z
-    wz: float = w * z
-    wx: float = w * x
-    wy: float = w * y
-
-    out[0] = 1.0 - 2.0 * (y2 + z2), 2.0 * (xy - wz), 2.0 * (xz + wy)
-    out[1] = 2.0 * (xy + wz), 1.0 - 2.0 * (x2 + z2), 2.0 * (yz - wx)
-    out[2] = 2.0 * (xz - wy), 2.0 * (yz + wx), 1.0 - 2.0 * (x2 + y2)
-
-    return out
-
-def hdr2mat(hdr):
-    pixdim = hdr['pixdim']
-    dim = hdr['dim']
-    b = float(hdr['quatern_b'])
-    c = float(hdr['quatern_c'])
-    d = float(hdr['quatern_d'])
-    a = np.sqrt(max(0, 1.0 - (b ** 2 + c ** 2 + d ** 2)))
-
-    rot_mat = to_matrix(-c, b, a, -d)
-
-    # rotate around the z axis by pi/.2 radians
-    rz90 = np.array([
-        [0., -1., 0.],
-        [1., 0., 0.],
-        [0., 0., 1.]
-    ])
-
-    # multiply matrices together to get final matrix
-    rot_mat = np.dot(rot_mat, rz90)
-
-    qfac = float(pixdim[0]) or 1.0
-
-    mat = np.eye(4)
-    mat[:3, :3] = rot_mat
-    mat[0, :3] *= pixdim[1] * dim[1]
-    mat[1, :3] *= pixdim[2] * dim[2]
-    mat[2, :3] *= pixdim[3] * qfac * dim[3]
-    mat[0, 3] = -float(hdr['qoffset_x'])
-    mat[1, 3] = -float(hdr['qoffset_y'])
-    mat[2, 3] = float(hdr['qoffset_z'])
-
-    return mat
 
 # mask2D is a 2D ndarray, i.e it is a m x n ndarray for some m, n. This function returns a m x 2 ndarray, where
 # each row in the array represents a point in the contour around mask2D.
