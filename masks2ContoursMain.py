@@ -15,6 +15,8 @@ def main():
 
     use_default_filepaths = True
 
+    np.set_printoptions(suppress = True) # Don't use scientific notation when printing out ndarrays.
+
     # Orientation for viewing plots
     az = 214.5268
     el = -56.0884

@@ -333,6 +333,10 @@ def contoursToImageCoords(maskSlice, transform, pixScale, sliceIndex, contours, 
         tmp = transform @ np.append(pix, 1)
         contours[i, :, sliceIndex] = tmp[0:3]
 
+        # pix = [tmp_endoLV(j,2); tmp_endoLV(j,1); i-1] .* pix_scale; CORRECT
+        # tmp = transform * [pix; 1];
+        # endoLVContours(j,:,i) = (tmp(1:3))';
+
 # Helper function.
 # "contours" is an m1 x 2 ndarray for some m1.
 # Returns an m2 x 2 ndarray that is the result of cleaning up "contours".
@@ -393,43 +397,35 @@ def readFromNIFTI(segName, frameNum):
     #transform[:2, :] = transform[:2, :] * -1  # This edit has to do with RAS system in Nifti files.
 
     ######################################## NEW ROTATION MATRIX FIXES BEGIN HERE ####################################
-
     global c
+    import scipy.io as sio
+    resultsDir = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\out\\"
     if c == 0:
-        transform = np.array([[0.5558, -0.6271, -6.5181, 119.9210],
-                              [1.3206, 0.0074, 3.2221, -224.4100],
-                              [-0.1895, -1.2999, 3.3365, 133.4400],
-                              [0, 0, 0, 1]])
-    elif c == 1:
-        transform = np.array([[0.9144, 0.0259, 0.4040, -169.4582],
-                              [-0.4037, -0.0150, 0.9148, 71.5884],
-                              [0.0297, -0.9996, -0.0032, 161.6910],
-                              [0, 0, 0, 1]])
-    elif c == 2:
-        transform = np.array([[0.8289, -0.0599, 0.5561, -101.4829],
-                              [0.0037, 0.9948, 0.1016, -189.5928],
-                              [-0.5593, -0.0821, 0.8249, 98.0028],
-                              [0, 0, 0, 1]])
-    elif c == 3:
-        transform = np.array([[0.9802, 0.0990, 0.1716, -141.2545],
-                              [0.0373, 0.7583, -0.6509, -148.3054],
-                              [-0.1945, 0.6444, 0.7395, -92.4032],
-                              [0, 0, 0, 1]])
+        file = resultsDir + "transforms\\" + "transform_SA.mat"
+    else:
+        file = resultsDir + "transforms\\" + "transform_LA_{}.mat".format(c)
+    transform = sio.loadmat(file)["trans"]
 
     #transform = hdr2mat(hdr)
+    transform = transform.transpose()
+    transform[0:2, :] = -transform[0:2, :] # This edit has to do with RAS system in Nifti
+
 
     ######################################## NEW ROTATION MATRIX FIXES END HERE ####################################
 
     # Initialize pixScale. In the MATLAB script, pixScale was a column vector. Here, it will be a row vector.
+    epsilon = .0001
     pixdim = hdr.structarr["pixdim"][1:3 + 1]
-    if np.isclose(np.linalg.norm(transform[:, 0]), 1):
+    pixdim[2] /= 10 # Hacky "fix"
+    if np.linalg.norm(transform[1:3+1, 0]) - 1 < epsilon:
         pixScale = pixdim  # Here we are manually going into the header file's data. This is somewhat dangerous- maybe it can be done a better way?
     else:
         pixScale = np.array([1, 1, 1])
 
     # Initialize one last thing.
-    pixSpacing = pixdim[0]
+    pixSpacing = pixdim[1] #?
 
+    c += 1
     return (seg, transform, pixScale, pixSpacing)
 
 def to_matrix(x, y, z, w):
