@@ -10,7 +10,7 @@ Dr. Renee Miller of King's College London wrote the MATLAB code, and I am the au
 
 Here's the interface the user uses to manually check, slice by slice, the output.
 
-<img src = "images/output.PNG" width = 300>
+<img src = "images/SA.PNG" width = 300>
 
 Here's the full 3D output for some sample data.
 
