@@ -329,13 +329,10 @@ def contoursToImageCoords(maskSlice, transform, pixScale, sliceIndex, contours, 
         raise ValueError("SA_LA must either be \"SA\" or \"LA\".")
 
     for i in range(0, maskSlice.shape[0]):
-        pix = np.array([maskSlice[i, 1], maskSlice[i, 0], thirdComp]) * pixScale
+        pts = np.array([maskSlice[i, 1], maskSlice[i, 0], thirdComp])
+        pix = pts * pixScale
         tmp = transform @ np.append(pix, 1)
         contours[i, :, sliceIndex] = tmp[0:3]
-
-        # pix = [tmp_endoLV(j,2); tmp_endoLV(j,1); i-1] .* pix_scale; CORRECT
-        # tmp = transform * [pix; 1];
-        # endoLVContours(j,:,i) = (tmp(1:3))';
 
 # Helper function.
 # "contours" is an m1 x 2 ndarray for some m1.
@@ -421,8 +418,10 @@ def readFromNIFTI(segName, frameNum):
     else:
         pixScale = np.array([1, 1, 1])
 
+    print(transform)
+
     # Initialize one last thing.
-    pixSpacing = pixdim[1] #?
+    pixSpacing = pixdim[1]
 
     c += 1
     return (seg, transform, pixScale, pixSpacing)
