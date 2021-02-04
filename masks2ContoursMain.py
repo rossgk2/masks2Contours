@@ -92,19 +92,20 @@ def main():
         RVSept = prepareContour("RVSept", SAContours, i)
         RVInserts = prepareContour("RVInserts", SAinserts, i)
 
-        ax.scatter(endoLV[:, 0], endoLV[:, 1], endoLV[:, 2], marker = ".", color = "green")
-        ax.scatter(epiLV[:, 0], epiLV[:, 1], epiLV[:, 2], marker = ".", color = "blue")
-        ax.scatter(endoRVFW[:, 0], endoRVFW[:, 1], endoRVFW[:, 2], marker = ".", color = "red")
-        ax.scatter(epiRVFW[:, 0], epiRVFW[:, 1], epiRVFW[:, 2], marker = ".", color = "yellow")
-        ax.scatter(RVSept[:, 0], RVSept[:, 1], RVSept[:, 2], marker = ".", color = "blue")
+        h0 = ax.scatter(endoLV[:, 0], endoLV[:, 1], endoLV[:, 2], marker = ".", color = "green")
+        h1 = ax.scatter(epiLV[:, 0], epiLV[:, 1], epiLV[:, 2], marker = ".", color = "blue")
+        h2 = ax.scatter(endoRVFW[:, 0], endoRVFW[:, 1], endoRVFW[:, 2], marker = ".", color = "red")
+        h3 = ax.scatter(epiRVFW[:, 0], epiRVFW[:, 1], epiRVFW[:, 2], marker = ".", color = "yellow")
+        h4 = ax.scatter(RVSept[:, 0], RVSept[:, 1], RVSept[:, 2], marker = ".", color = "blue")
+        h5 = ax.scatter(RVInserts[:, 0], RVInserts[:, 1], RVInserts[:, 2], s = 50, color = "red")
 
     # Valve points.
-    ax.scatter(mv[:, 0], mv[:, 1], mv[:, 2], color = "black")
-    ax.scatter(av[:, 0], av[:, 1], av[:, 2], color = "cyan")
-    ax.scatter(tv[:, 0], tv[:, 1], tv[:, 2], color = "magenta")
+    h6 = ax.scatter(mv[:, 0], mv[:, 1], mv[:, 2], s = 50, color = "black")
+    h7 = ax.scatter(av[:, 0], av[:, 1], av[:, 2], s = 50, color = "cyan")
+    h8 = ax.scatter(tv[:, 0], tv[:, 1], tv[:, 2], s = 50, color = "magenta")
 
     # Apex.
-    ax.scatter(apex[0], apex[1], apex[2], color = "black")
+    h9 = ax.scatter(apex[0], apex[1], apex[2], color = "black")
 
     # Long axis contours.
     numLASlices = LAContours["endoLV"].shape[2]
@@ -122,6 +123,9 @@ def main():
         ax.scatter(RVSept[:, 0], RVSept[:, 1], RVSept[:, 2], marker = ".", color = "blue")
 
     ax.view_init(elev = el, azim= az)
+    ax.legend((h0, h1, h2, h3, h4, h5, h6, h7, h8, h9),
+              ("LV endo", "Epi", "RVSept", "RVFW endo", "RVFW epi", "RV inserts",
+              "Mitral valve", "Aortic valve", "Tricuspid valve", "Apex"))
     plt.show()  # Must use plt.show() instead of fig.show(). Might have something to do with https://github.com/matplotlib/matplotlib/issues/13101#issuecomment-452032924
 
 def prepareContour(varName, contoursDict, sliceIndex):

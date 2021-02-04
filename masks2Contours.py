@@ -406,7 +406,6 @@ def readFromNIFTI(segName, frameNum):
         file = resultsDir + "transforms\\" + "transform_LA_{}.mat".format(c)
     transform = sio.loadmat(file)["trans"]
 
-    #transform = hdr2mat(hdr)
     transform = transform.transpose()
     transform[0:2, :] = -transform[0:2, :] # This edit has to do with RAS system in Nifti
 
@@ -417,7 +416,7 @@ def readFromNIFTI(segName, frameNum):
     epsilon = .0001
     pixdim = hdr.structarr["pixdim"][1:3 + 1]
     pixdim[2] /= 10 # Hacky "fix"
-    if np.linalg.norm(transform[1:3+1, 0]) - 1 < epsilon:
+    if np.linalg.norm(transform[1:3 + 1, 0]) - 1 < epsilon:
         pixScale = pixdim  # Here we are manually going into the header file's data. This is somewhat dangerous- maybe it can be done a better way?
     else:
         pixScale = np.array([1, 1, 1])
