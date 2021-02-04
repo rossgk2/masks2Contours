@@ -2,13 +2,19 @@
 
 ## Summary
 
-This is a Python port of MATLAB code for a joint University of Michigan and King's College London research group. The MATLAB code took 3D selections as input (typically, we are interested in selecting the 3D geometry of a human heart) and produced the contour points of those selections as output. The Python code, being a port, does the exact same thing, but tries to improve upon the organization of the MATLAB code.
+This is a Python port of MATLAB code for a joint University of Michigan and King's College London research group. The MATLAB code took 3D selections as input (typically, we are interested in selecting the 3D geometry of a human heart) and produced contour points of those selections as output. The output contour points are also labeled according which chamber in the heart they reside in. The Python code, being a port, does the exact same thing, but tries to improve upon the organization of the MATLAB code.
 
 "3D selections" are more commonly called "3D masks"- that is why this program is called `masks2Contours`.
 
 Dr. Renee Miller of King's College London wrote the MATLAB code, and I am the author of the Python port.
 
-<img src = "images/SA.PNG" width = 500>
+Here's the interface the user uses to manually check, slice by slice, the output.
+
+<img src = "images/output.PNG" width = 300>
+
+Here's the full 3D output for some sample data.
+
+<img src = "images/output.PNG" width = 500>
 
 ## Differences between this Python port and the MATLAB original 
 
