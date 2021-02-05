@@ -25,7 +25,8 @@ def calcApex(epiPts1, epiPts2):
 # - tv, av, and pv are 2D ndarrays containing the tricuspid, aortic, and pulmonary valve points. tv, av, and pv may
 # all be None.
 def manuallyCompileValvePoints(fldr, numFrames, frameNum):
-    mat_files = glob(fldr + "valve-motion-predicted-LA_[0-9]CH.mat")
+    mat_filenames = glob(fldr + "valve-motion-predicted-LA_[0-9]CH.mat")
+    mat_files = [sio.loadmat(file) for file in mat_filenames]
 
     mv = np.zeros((len(mat_files), 2, 3))
     tv = np.zeros((2, 3))
@@ -34,8 +35,7 @@ def manuallyCompileValvePoints(fldr, numFrames, frameNum):
 
     for i, file in enumerate(mat_files):
         # Load the variable point_coords_mv from the MATLAB file.
-        mat_file = sio.loadmat(file)
-        point_coords_mv = mat_file["point_coords_mv"]
+        point_coords_mv = file["point_coords_mv"]
 
         # Interpolate onto applicable number of frames if needed.
         tmp = interpTime(point_coords_mv, numFrames)
@@ -44,10 +44,12 @@ def manuallyCompileValvePoints(fldr, numFrames, frameNum):
     def get_interp_mat_var(mat_var):
         var_name = "point_coords_" + mat_var
         result = None
-        if var_name in mat_file:
-            point_coords_mat_var = mat_file[var_name]
-            result = interpTime(point_coords_mat_var, numFrames)
-            result = np.squeeze(result[frameNum, :, :])
+        for file in mat_files:
+            if var_name in file:
+                point_coords_mat_var = file[var_name]
+                result = interpTime(point_coords_mat_var, numFrames)
+                result = np.squeeze(result[frameNum, :, :])
+                break
 
         return result
 
@@ -77,7 +79,7 @@ def interpTime(oldValvePts, newNumInterpSamples):
             if sampledValues.size != 0:
                 samplePts = np.linspace(1, 100, len(sampledValues))
                 queryPts = np.linspace(1, 100, newNumInterpSamples)
-                result[:, i, j] = np.interp(queryPts, samplePts, sampledValues)
+                result[:, i, j] = np.interp(queryPts, samplePts, sampledValues) # note, np.interp() gives slightly different results than MATLAB's interp1d()
             else:
                 result[:, i, j] = np.zeros(newNumInterpSamples, 1)
 

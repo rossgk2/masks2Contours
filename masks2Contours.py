@@ -39,6 +39,7 @@ def masks2ContoursSA(segName, frameNum, config):
     for i in range(0, numSlices):
         inputsList = (endoLV[:, :, i], epiLV[:, :, i], endoRV[:, :, i], transform, pixScale, pixSpacing) #Note the last 3 args are the same every iteration.
         outputsList = (endoLVContours, epiLVContours, RVSContours, endoRVFWContours, epiRVFWContours, RVInserts)
+        figaxs = None
         if config.PLOT:  # figaxs is possibly None (but this is fine because it is only used when config.PLOT == True)
             figaxs = (fig, axs)
         slice2Contours(inputsList, outputsList, config, figaxs, i, "SA")
@@ -111,6 +112,7 @@ def masks2ContoursLA(LA_segs, resultsDir, frameNum, numSlices, config):
 
         inputsList = (endoLVList[i], epiLVList[i], endoRVList[i], transformList[i], pixScaleList[i], pixSpacingList[i])
         outputsList = (endoLVContours, epiLVContours, RVSContours, endoRVFWContours, epiRVFWContours)
+        figaxs = None
         if config.PLOT: #figaxs is possibly None (but this is fine because it is only used when config.PLOT == True)
             figaxs = (fig, axs)
         slice2Contours(inputsList, outputsList, config, figaxs, i, "LA")
