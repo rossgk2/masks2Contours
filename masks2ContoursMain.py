@@ -1,3 +1,4 @@
+import csv
 from glob import glob
 from typing import NamedTuple
 
@@ -121,6 +122,41 @@ def main():
               ("LV endo", "Epi", "RVSept", "RVFW endo", "RVFW epi", "RV inserts",
               "Mitral valve", "Aortic valve", "Tricuspid valve", "Apex"))
     plt.show()  # Must use plt.show() instead of fig.show(). Might have something to do with https://github.com/matplotlib/matplotlib/issues/13101#issuecomment-452032924
+
+    #################################################
+    # Write the results to a text file
+    #################################################
+    try:
+        file = open(fldr + "GPFile_py.txt", "w", newline = "", encoding = "utf-8")
+    except Exception as e:
+        print(e)
+        exit()
+
+    try:
+        file1 = open(fldr + "Case1_FR1_py.txt", "w", newline = "", encoding = "utf-8")
+    except Exception as e:
+        print(e)
+        exit()
+
+    writer = csv.writer(file, delimiter = "\t")
+    writer1 = csv.writer(file1, delimiter = "\t")
+
+    writer.writerow(["x", "y", "z", "contour type", "slice", "weight", "time frame"])
+    for j, i in enumerate(includedSlices): # i will be the ith included slice, and j will live in range(len(includedSlices))
+
+        # LV endo
+        LVendoContours = SAContours["endoLV"]
+        LVendo = np.squeeze(LVendoContours[:, :, i])
+        LVendo = ut.removeZerorows(LVendo)
+
+        for k in range(0, LVendo.shape[0]):
+            writer1.writerow(["{:0.6f}".format(LVendo[k, 0]), "{:0.6f}".format(LVendo[k, 1]), "{:0.6f}".format(LVendo[k, 2]),
+                             "saendocardialContour", "{:d}".format(j + 1), "{:0.4f}".format(1)])
+            writer.writerow(["{:0.6f}".format(LVendo[k, 0]), "{:0.6f}".format(LVendo[k, 1]), "{:0.6f}".format(LVendo[k, 2]),
+                             "SAX_LV_ENDOCARDIAL", "{:d}".format(j + 1), "{:0.4f}".format(1), "{:d}".format(frameNum)])
+
+
+
 
 def prepareContour(varName, contoursDict, sliceIndex):
     result = contoursDict[varName]
