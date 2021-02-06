@@ -412,8 +412,7 @@ def getContoursFromMask(mask2D, irregMaxSize):
 
     # Remove irregularites with fewer than irregMaxSize pixels.Note, the "min_size" parameter to this function is
     # incorrectly named, and should really be called "max_size".
-    morphology.remove_small_objects(np.squeeze(mask2D), min_size=irregMaxSize,
-                                    connectivity=2)  # Might have to come back and see if connectivity = 2 was the right choice
+    mask2D = morphology.remove_small_objects(np.squeeze(mask2D), min_size=irregMaxSize, connectivity=2)  # Might have to come back and see if connectivity = 2 was the right choice
 
     # Fill in the holes left by the removal (code from https://scikit-image.org/docs/dev/auto_examples/features_detection/plot_holes_and_peaks.html).
     seed = np.copy(mask2D)
