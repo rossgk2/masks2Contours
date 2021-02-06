@@ -141,14 +141,18 @@ def main():
         exit()
 
     writer = csv.writer(file, delimiter = "\t")
-    writer1 = csv.writer(file1, delimiter = "\t")
+    writer1 = csv.writer(file1, delimiter = " ")
 
     # TO-DO: precompute the results of prepareContour() and store them before plotting things, since results of
     # prepareContour() are used twice.
 
-    def writeContour(mask, i, j, name1, name2, rvi_weights = False):
-        print("wc: " + str((i, j)))
+    def writePoint(point, j, name1, name2, weight = 1):
+        writer1.writerow(["{:0.6f}".format(point[0]), "{:0.6f}".format(point[1]), "{:0.6f}".format(point[2]),
+                          name1, "{:d}".format(j + 1), "{:0.4f}".format(weight)])
+        writer.writerow(["{:0.6f}".format(point[0]), "{:0.6f}".format(point[1]), "{:0.6f}".format(point[2]),
+                     name2, "{:d}".format(j + 1), "{:0.4f}".format(weight), "{:d}".format(frameNum)])
 
+    def writeContour(mask, i, j, name1, name2, rvi_weights = False):
         if rvi_weights:
             RVInsertsWeights = SAinserts["RVInsertsWeights"]
             multiIndex = np.unravel_index(i, RVInsertsWeights.shape, order = "F")
@@ -157,10 +161,7 @@ def main():
             weight = 1
 
         for k in range(0, mask.shape[0]):
-            writer1.writerow(["{:0.6f}".format(mask[k, 0]), "{:0.6f}".format(mask[k, 1]), "{:0.6f}".format(mask[k, 2]),
-                 name1, "{:d}".format(j + 1), "{:0.4f}".format(weight)])
-            writer.writerow(["{:0.6f}".format(mask[k, 0]), "{:0.6f}".format(mask[k, 1]), "{:0.6f}".format(mask[k, 2]),
-                 name2, "{:d}".format(j + 1), "{:0.4f}".format(weight), "{:d}".format(frameNum)])
+            writePoint(mask[k, :], j, name1, name2, weight)
 
     # Write short axis contour data to files
     writer.writerow(["x", "y", "z", "contour type", "slice", "weight", "time frame"])
@@ -170,7 +171,7 @@ def main():
         writeContour(LVendo, i, j, "saendocardialContour", "SAX_LV_ENDOCARDIAL")
 
         # RV free wall
-        RVFW = prepareContour(SAContours["endoLV"], i)
+        RVFW = prepareContour(SAContours["endoRVFW"], i)
         writeContour(RVFW, i, j, "RVFW", "SAX_RV_FREEWALL")
 
         # Epicardium
@@ -190,10 +191,37 @@ def main():
     # Now do long axis contour data
     last_SA_j = len(includedSlices) - 1
     first_LA_j = last_SA_j + 1
-    for i, j in zip(range(numLASlices), range(first_LA_j, first_LA_j + numLASlices)):
+    LA_i_range = range(numLASlices) # we will use LA_i_range and LA_j_range after the loop
+    LA_j_range = range(first_LA_j, first_LA_j + numLASlices)
+
+    for i, j in zip(LA_i_range, LA_j_range):
         # LV endo
         LVendo = prepareContour(LAContours["endoLV"], i)
         writeContour(LVendo, i, j, "saendocardialContour", "LAX_LV_ENDOCARDIAL")
+
+        # RV free wall
+        RVFW = prepareContour(LAContours["endoRVFW"], i)
+        writeContour(LVendo, i, j, "RVFW", "LAX_RV_FREEWALL")
+
+        # Epicardium
+        LVepi = prepareContour(LAContours["epiLV"], i)
+        RVepi = prepareContour(LAContours["epiRVFW"], i)
+        epi = np.vstack((LVepi, RVepi))
+        writeContour(epi, i, j, "saepicardialContour", "LAX_LV_EPICARDIAL")
+
+        # RV septum
+        RVSept = prepareContour(LAContours["RVSept"], i) # not doing isempty check
+        writeContour(RVSept, i, j, "RVS", "LAX_RV_SEPTUM")
+
+        # Valves (tricuspid, mitral, aortic, pulmonary)
+        writeContour(tv, i, j, "Tricuspid_Valve", "TRICUSPID_VALVE")
+        writeContour(mv, i, j, "BP_point", "MITRAL_VALVE")
+        writeContour(av, i, j, "Aorta", "AORTA_VALVE")
+        writeContour(pv, i, j, "Pulmonary", "PULMONARY_VALVE")
+
+    # Apex
+    writePoint(apex, LA_j_range[-1], "LA_Apex_Point", "APEX_POINT")
+
 
 
 def prepareContour(mask, sliceIndex):
