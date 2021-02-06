@@ -80,12 +80,12 @@ def main():
     # Short axis contours.
     fig, ax = plt.subplots(1, 1, subplot_kw = {"projection" : "3d"})
     for i in includedSlices:
-        endoLV = prepareContour("endoLV", SAContours, i)
-        epiLV = prepareContour("epiLV", SAContours, i)
-        endoRVFW = prepareContour("endoRVFW", SAContours, i)
-        epiRVFW = prepareContour("epiRVFW", SAContours, i)
-        RVSept = prepareContour("RVSept", SAContours, i)
-        RVInserts = prepareContour("RVInserts", SAinserts, i)
+        endoLV = prepareContour(SAContours["endoLV"], i)
+        epiLV = prepareContour(SAContours["epiLV"], i)
+        endoRVFW = prepareContour(SAContours["endoRVFW"], i)
+        epiRVFW = prepareContour(SAContours["epiRVFW"], i)
+        RVSept = prepareContour(SAContours["RVSept"], i)
+        RVInserts = prepareContour(SAinserts["RVInserts"], i)
 
         h0 = ax.scatter(endoLV[:, 0], endoLV[:, 1], endoLV[:, 2], marker = ".", color = "green")
         h1 = ax.scatter(epiLV[:, 0], epiLV[:, 1], epiLV[:, 2], marker = ".", color = "blue")
@@ -105,11 +105,11 @@ def main():
     # Long axis contours.
     numLASlices = LAContours["endoLV"].shape[2]
     for i in range(numLASlices):
-        endoLV = prepareContour("endoLV", LAContours, i)
-        epiLV = prepareContour("epiLV", LAContours, i)
-        endoRVFW = prepareContour("endoRVFW", LAContours, i)
-        epiRVFW = prepareContour("epiRVFW", LAContours, i)
-        RVSept = prepareContour("RVSept", LAContours, i)
+        endoLV = prepareContour(LAContours["endoLV"], i)
+        epiLV = prepareContour(LAContours["epiLV"], i)
+        endoRVFW = prepareContour(LAContours["endoRVFW"], i)
+        epiRVFW = prepareContour(LAContours["epiRVFW"], i)
+        RVSept = prepareContour(LAContours["RVSept"], i)
 
         ax.scatter(endoLV[:, 0], endoLV[:, 1], endoLV[:, 2], marker = ".", color = "green")
         ax.scatter(epiLV[:, 0], epiLV[:, 1], epiLV[:, 2], marker = ".", color = "blue")
@@ -141,26 +141,28 @@ def main():
     writer = csv.writer(file, delimiter = "\t")
     writer1 = csv.writer(file1, delimiter = "\t")
 
+    # TO-DO: precompute the results of prepareContour() and store them before plotting things, since results of
+    # prepareContour() are used twice.
+
+    def writeContour(mask, j, name1, name2):
+        for k in range(0, mask.shape[0]):
+            writer1.writerow(["{:0.6f}".format(mask[k, 0]), "{:0.6f}".format(mask[k, 1]), "{:0.6f}".format(mask[k, 2]),
+                 name1, "{:d}".format(j + 1), "{:0.4f}".format(1)])
+            writer.writerow(["{:0.6f}".format(mask[k, 0]), "{:0.6f}".format(mask[k, 1]), "{:0.6f}".format(mask[k, 2]),
+                 name2, "{:d}".format(j + 1), "{:0.4f}".format(1), "{:d}".format(frameNum)])
+
     writer.writerow(["x", "y", "z", "contour type", "slice", "weight", "time frame"])
     for j, i in enumerate(includedSlices): # i will be the ith included slice, and j will live in range(len(includedSlices))
 
-        # LV endo
-        LVendoContours = SAContours["endoLV"]
-        LVendo = np.squeeze(LVendoContours[:, :, i])
-        LVendo = ut.removeZerorows(LVendo)
+        LVendo = prepareContour(SAContours["endoLV"], i)
+        writeContour(LVendo, j, "saendocardialContour", "SAX_LV_ENDOCARDIAL")
 
-        for k in range(0, LVendo.shape[0]):
-            writer1.writerow(["{:0.6f}".format(LVendo[k, 0]), "{:0.6f}".format(LVendo[k, 1]), "{:0.6f}".format(LVendo[k, 2]),
-                             "saendocardialContour", "{:d}".format(j + 1), "{:0.4f}".format(1)])
-            writer.writerow(["{:0.6f}".format(LVendo[k, 0]), "{:0.6f}".format(LVendo[k, 1]), "{:0.6f}".format(LVendo[k, 2]),
-                             "SAX_LV_ENDOCARDIAL", "{:d}".format(j + 1), "{:0.4f}".format(1), "{:d}".format(frameNum)])
+        RVFW = prepareContour(SAContours["endoLV"], i)
+        writeContour(RVFW, j, "RVFW", "SAX_RV_FREEWALL")
 
 
-
-
-def prepareContour(varName, contoursDict, sliceIndex):
-    result = contoursDict[varName]
-    result = np.squeeze(result[:, :, sliceIndex])
+def prepareContour(mask, sliceIndex):
+    result = np.squeeze(mask[:, :, sliceIndex])
     return ut.removeZerorows(result)
 
 class Config(NamedTuple):
