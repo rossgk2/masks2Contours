@@ -57,13 +57,15 @@ def main():
 
     # Omit short axis slices without any contours. Initialize includedSlices to hold the slices we will soon iterate over.
     SAendoLVContours = SAContours["endoLV"]
-    slicesToKeep = np.squeeze(SAendoLVContours[0, 0, :])
-    slicesToOmit = np.logical_not(slicesToKeep).astype(int) # is 1 wherever slicesToKeep was 0.
-
+    slicesToKeep = np.squeeze(SAendoLVContours[0, 0, :]).astype(int)
+    slicesToOmit1 = np.array([i for i in range(SAendoLVContours.shape[2]) if prepareContour(SAendoLVContours, i).size == 0])
+    slicesToOmit2 = np.logical_not(slicesToKeep) # is 1 wherever slicesToKeep was 0.
+    slicesToOmit = np.unique(np.concatenate((slicesToOmit1, slicesToOmit2)).astype(int))
     numSASlices = SAendoLVContours.shape[2]
     includedSlices = np.linspace(1, numSASlices, numSASlices)
     includedSlices = ut.deleteHelper(includedSlices, slicesToOmit, axis = 0).astype(int)
     includedSlices = includedSlices - 1 # convert to Python indexing
+
 
     # Calculate apex using "method 2" from the MATLAB script.
     LAepiLVContours = LAContours["epiLV"]
@@ -124,7 +126,7 @@ def main():
     plt.show()  # Must use plt.show() instead of fig.show(). Might have something to do with https://github.com/matplotlib/matplotlib/issues/13101#issuecomment-452032924
 
     #################################################
-    # Write the results to a text file
+    # Write the results to text files
     #################################################
     try:
         file = open(fldr + "GPFile_py.txt", "w", newline = "", encoding = "utf-8")
@@ -144,21 +146,54 @@ def main():
     # TO-DO: precompute the results of prepareContour() and store them before plotting things, since results of
     # prepareContour() are used twice.
 
-    def writeContour(mask, j, name1, name2):
+    def writeContour(mask, i, j, name1, name2, rvi_weights = False):
+        print("wc: " + str((i, j)))
+
+        if rvi_weights:
+            RVInsertsWeights = SAinserts["RVInsertsWeights"]
+            multiIndex = np.unravel_index(i, RVInsertsWeights.shape, order = "F")
+            weight = RVInsertsWeights[multiIndex]
+        else:
+            weight = 1
+
         for k in range(0, mask.shape[0]):
             writer1.writerow(["{:0.6f}".format(mask[k, 0]), "{:0.6f}".format(mask[k, 1]), "{:0.6f}".format(mask[k, 2]),
-                 name1, "{:d}".format(j + 1), "{:0.4f}".format(1)])
+                 name1, "{:d}".format(j + 1), "{:0.4f}".format(weight)])
             writer.writerow(["{:0.6f}".format(mask[k, 0]), "{:0.6f}".format(mask[k, 1]), "{:0.6f}".format(mask[k, 2]),
-                 name2, "{:d}".format(j + 1), "{:0.4f}".format(1), "{:d}".format(frameNum)])
+                 name2, "{:d}".format(j + 1), "{:0.4f}".format(weight), "{:d}".format(frameNum)])
 
+    # Write short axis contour data to files
     writer.writerow(["x", "y", "z", "contour type", "slice", "weight", "time frame"])
     for j, i in enumerate(includedSlices): # i will be the ith included slice, and j will live in range(len(includedSlices))
-
+        # LV endo
         LVendo = prepareContour(SAContours["endoLV"], i)
-        writeContour(LVendo, j, "saendocardialContour", "SAX_LV_ENDOCARDIAL")
+        writeContour(LVendo, i, j, "saendocardialContour", "SAX_LV_ENDOCARDIAL")
 
+        # RV free wall
         RVFW = prepareContour(SAContours["endoLV"], i)
-        writeContour(RVFW, j, "RVFW", "SAX_RV_FREEWALL")
+        writeContour(RVFW, i, j, "RVFW", "SAX_RV_FREEWALL")
+
+        # Epicardium
+        LVepi = prepareContour(SAContours["epiLV"], i)
+        RVepi = prepareContour(SAContours["epiRVFW"], i)
+        epi = np.vstack((LVepi, RVepi))
+        writeContour(epi, i, j, "saepicardialContour", "SAX_LV_EPICARDIAL")
+
+        # RV septum
+        RVSept = prepareContour(SAContours["RVSept"], i)
+        writeContour(RVSept, i, j, "RVS", "SAX_RV_SEPTUM")
+
+        # RV inserts
+        RVI = prepareContour(SAinserts["RVInserts"], i)
+        writeContour(RVI, i, j, "RV_insert", "RV_INSERT", rvi_weights = True)
+
+    # Now do long axis contour data
+    last_SA_j = len(includedSlices) - 1
+    first_LA_j = last_SA_j + 1
+    for i, j in zip(range(numLASlices), range(first_LA_j, first_LA_j + numLASlices)):
+        # LV endo
+        LVendo = prepareContour(LAContours["endoLV"], i)
+        writeContour(LVendo, i, j, "saendocardialContour", "LAX_LV_ENDOCARDIAL")
 
 
 def prepareContour(mask, sliceIndex):
