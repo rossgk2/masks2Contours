@@ -37,8 +37,8 @@ def main():
     # short and long axis image files, respectively. If PLOT == True, these contour points are displayed slice by slice
     # as they are computed.
     #
-    # SAContours and LAContours are dicts whose keys are strings such as "LVendo" or "RVSept" and whose values are
-    # m x 2 ndarrays containing the contour points. SAinserts is a dict with the two keys "RVInserts" and "RVInsertsWeights".
+    # SAContours and LAContours are dicts whose keys are strings such as "LVendo" or "RVsept" and whose values are
+    # m x 2 ndarrays containing the contour points. SAinserts is a dict with the two keys "RVinserts" and "RVInsertsWeights".
     (SAContours, SAinserts) = masks2ContoursSA(segName, frameNum, config)
     LAContours = masks2ContoursLA(LA_segs, resultsDir, frameNum, numSlices = len(LA_names), config = config)
 
@@ -56,7 +56,7 @@ def main():
     pv = ut.removeZerorows(pv)
 
     # Omit short axis slices without any contours. Initialize includedSlices to hold the slices we will soon iterate over.
-    SAendoLVContours = SAContours["endoLV"]
+    SAendoLVContours = SAContours["LVendo"]
     slicesToKeep = np.squeeze(SAendoLVContours[0, 0, :]).astype(int)
     slicesToOmit1 = np.array([i for i in range(SAendoLVContours.shape[2]) if prepareContour(SAendoLVContours, i).size == 0])
     slicesToOmit2 = np.logical_not(slicesToKeep) # is 1 wherever slicesToKeep was 0.
@@ -68,7 +68,7 @@ def main():
 
 
     # Calculate apex using "method 2" from the MATLAB script.
-    LAepiLVContours = LAContours["epiLV"]
+    LAepiLVContours = LAContours["LVepi"]
     epiPts1 = np.squeeze(LAepiLVContours[:, :, 0])
     epiPts2 = np.squeeze(LAepiLVContours[:, :, 2])
     apex = mut.calcApex(epiPts1, epiPts2)
@@ -82,19 +82,19 @@ def main():
     # Short axis contours.
     fig, ax = plt.subplots(1, 1, subplot_kw = {"projection" : "3d"})
     for i in includedSlices:
-        endoLV = prepareContour(SAContours["endoLV"], i)
-        epiLV = prepareContour(SAContours["epiLV"], i)
-        endoRVFW = prepareContour(SAContours["endoRVFW"], i)
-        epiRVFW = prepareContour(SAContours["epiRVFW"], i)
-        RVSept = prepareContour(SAContours["RVSept"], i)
-        RVInserts = prepareContour(SAinserts["RVInserts"], i)
+        endoLV = prepareContour(SAContours["LVendo"], i)
+        epiLV = prepareContour(SAContours["LVepi"], i)
+        endoRVFW = prepareContour(SAContours["RVFWendo"], i)
+        epiRVFW = prepareContour(SAContours["RVFWepi"], i)
+        RVsept = prepareContour(SAContours["RVsept"], i)
+        RVinserts = prepareContour(SAinserts["RVinserts"], i)
 
         h0 = ax.scatter(endoLV[:, 0], endoLV[:, 1], endoLV[:, 2], marker = ".", color = "green")
         h1 = ax.scatter(epiLV[:, 0], epiLV[:, 1], epiLV[:, 2], marker = ".", color = "blue")
         h2 = ax.scatter(endoRVFW[:, 0], endoRVFW[:, 1], endoRVFW[:, 2], marker = ".", color = "red")
         h3 = ax.scatter(epiRVFW[:, 0], epiRVFW[:, 1], epiRVFW[:, 2], marker = ".", color = "yellow")
-        h4 = ax.scatter(RVSept[:, 0], RVSept[:, 1], RVSept[:, 2], marker = ".", color = "blue")
-        h5 = ax.scatter(RVInserts[:, 0], RVInserts[:, 1], RVInserts[:, 2], s = 50, color = "red")
+        h4 = ax.scatter(RVsept[:, 0], RVsept[:, 1], RVsept[:, 2], marker = ".", color = "blue")
+        h5 = ax.scatter(RVinserts[:, 0], RVinserts[:, 1], RVinserts[:, 2], s = 50, color = "red")
 
     # Valve points.
     h6 = ax.scatter(mv[:, 0], mv[:, 1], mv[:, 2], s = 50, color = "black")
@@ -105,23 +105,23 @@ def main():
     h9 = ax.scatter(apex[0], apex[1], apex[2], color = "black")
 
     # Long axis contours.
-    numLASlices = LAContours["endoLV"].shape[2]
+    numLASlices = LAContours["LVendo"].shape[2]
     for i in range(numLASlices):
-        endoLV = prepareContour(LAContours["endoLV"], i)
-        epiLV = prepareContour(LAContours["epiLV"], i)
-        endoRVFW = prepareContour(LAContours["endoRVFW"], i)
-        epiRVFW = prepareContour(LAContours["epiRVFW"], i)
-        RVSept = prepareContour(LAContours["RVSept"], i)
+        endoLV = prepareContour(LAContours["LVendo"], i)
+        epiLV = prepareContour(LAContours["LVepi"], i)
+        endoRVFW = prepareContour(LAContours["RVFWendo"], i)
+        epiRVFW = prepareContour(LAContours["RVFWepi"], i)
+        RVsept = prepareContour(LAContours["RVsept"], i)
 
         ax.scatter(endoLV[:, 0], endoLV[:, 1], endoLV[:, 2], marker = ".", color = "green")
         ax.scatter(epiLV[:, 0], epiLV[:, 1], epiLV[:, 2], marker = ".", color = "blue")
         ax.scatter(endoRVFW[:, 0], endoRVFW[:, 1], endoRVFW[:, 2], marker = ".", color = "red")
         ax.scatter(epiRVFW[:, 0], epiRVFW[:, 1], epiRVFW[:, 2], marker = ".", color = "yellow")
-        ax.scatter(RVSept[:, 0], RVSept[:, 1], RVSept[:, 2], marker = ".", color = "blue")
+        ax.scatter(RVsept[:, 0], RVsept[:, 1], RVsept[:, 2], marker = ".", color = "blue")
 
     ax.view_init(elev = el, azim= az)
     ax.legend((h0, h1, h2, h3, h4, h5, h6, h7, h8, h9),
-              ("LV endo", "Epi", "RVSept", "RVFW endo", "RVFW epi", "RV inserts",
+              ("LV endo", "Epi", "RVsept", "RVFW endo", "RVFW epi", "RV inserts",
               "Mitral valve", "Aortic valve", "Tricuspid valve", "Apex"))
     plt.show()  # Must use plt.show() instead of fig.show(). Might have something to do with https://github.com/matplotlib/matplotlib/issues/13101#issuecomment-452032924
 
@@ -154,7 +154,7 @@ def main():
 
     def writeContour(mask, i, j, name1, name2, rvi_weights = False):
         if rvi_weights:
-            RVInsertsWeights = SAinserts["RVInsertsWeights"]
+            RVInsertsWeights = SAinserts["RVinsertsWeights"]
             multiIndex = np.unravel_index(i, RVInsertsWeights.shape, order = "F")
             weight = RVInsertsWeights[multiIndex]
         else:
@@ -167,25 +167,25 @@ def main():
     writer.writerow(["x", "y", "z", "contour type", "slice", "weight", "time frame"])
     for j, i in enumerate(includedSlices): # i will be the ith included slice, and j will live in range(len(includedSlices))
         # LV endo
-        LVendo = prepareContour(SAContours["endoLV"], i)
+        LVendo = prepareContour(SAContours["LVendo"], i)
         writeContour(LVendo, i, j, "saendocardialContour", "SAX_LV_ENDOCARDIAL")
 
         # RV free wall
-        RVFW = prepareContour(SAContours["endoRVFW"], i)
+        RVFW = prepareContour(SAContours["RVFWendo"], i)
         writeContour(RVFW, i, j, "RVFW", "SAX_RV_FREEWALL")
 
         # Epicardium
-        LVepi = prepareContour(SAContours["epiLV"], i)
-        RVepi = prepareContour(SAContours["epiRVFW"], i)
+        LVepi = prepareContour(SAContours["LVepi"], i)
+        RVepi = prepareContour(SAContours["RVFWepi"], i)
         epi = np.vstack((LVepi, RVepi))
         writeContour(epi, i, j, "saepicardialContour", "SAX_LV_EPICARDIAL")
 
         # RV septum
-        RVSept = prepareContour(SAContours["RVSept"], i)
-        writeContour(RVSept, i, j, "RVS", "SAX_RV_SEPTUM")
+        RVsept = prepareContour(SAContours["RVsept"], i)
+        writeContour(RVsept, i, j, "RVS", "SAX_RV_SEPTUM")
 
         # RV inserts
-        RVI = prepareContour(SAinserts["RVInserts"], i)
+        RVI = prepareContour(SAinserts["RVinserts"], i)
         writeContour(RVI, i, j, "RV_insert", "RV_INSERT", rvi_weights = True)
 
     # Now do long axis contour data
@@ -196,22 +196,22 @@ def main():
 
     for i, j in zip(LA_i_range, LA_j_range):
         # LV endo
-        LVendo = prepareContour(LAContours["endoLV"], i)
+        LVendo = prepareContour(LAContours["LVendo"], i)
         writeContour(LVendo, i, j, "saendocardialContour", "LAX_LV_ENDOCARDIAL")
 
         # RV free wall
-        RVFW = prepareContour(LAContours["endoRVFW"], i)
+        RVFW = prepareContour(LAContours["RVFWendo"], i)
         writeContour(LVendo, i, j, "RVFW", "LAX_RV_FREEWALL")
 
         # Epicardium
-        LVepi = prepareContour(LAContours["epiLV"], i)
-        RVepi = prepareContour(LAContours["epiRVFW"], i)
+        LVepi = prepareContour(LAContours["LVepi"], i)
+        RVepi = prepareContour(LAContours["RVFWepi"], i)
         epi = np.vstack((LVepi, RVepi))
         writeContour(epi, i, j, "saepicardialContour", "LAX_LV_EPICARDIAL")
 
         # RV septum
-        RVSept = prepareContour(LAContours["RVSept"], i) # not doing isempty check
-        writeContour(RVSept, i, j, "RVS", "LAX_RV_SEPTUM")
+        RVsept = prepareContour(LAContours["RVsept"], i) # not doing isempty check
+        writeContour(RVsept, i, j, "RVS", "LAX_RV_SEPTUM")
 
         # Valves (tricuspid, mitral, aortic, pulmonary)
         writeContour(tv, i, j, "Tricuspid_Valve", "TRICUSPID_VALVE")

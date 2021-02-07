@@ -69,12 +69,12 @@ def masks2ContoursSA(segName, frameNum, config):
         RVinsertsWeights[i, indices] = np.abs(err)/np.max(np.abs(err))
 
     # Return a 2-tuple of dictionaries.
-    return ({"endoLV" : LVendoContours,
-            "epiLV" : LVepiContours,
-            "endoRVFW" : RVFWendoContours,
-            "epiRVFW" : RVFWepiContours,
-            "RVSept" : RVseptContours } ,
-            {"RVInserts" : RVinserts, "RVInsertsWeights" : RVinsertsWeights})
+    return ({"LVendo" : LVendoContours,
+            "LVepi" : LVepiContours,
+            "RVFWendo" : RVFWendoContours,
+            "RVFWepi" : RVFWepiContours,
+            "RVsept" : RVseptContours } ,
+            {"RVinserts" : RVinserts, "RVinsertsWeights" : RVinsertsWeights})
 
 def masks2ContoursLA(LA_segs, resultsDir, frameNum, numSlices, config):
     # Precompute (more accurately, "pre-read") endoLV, epiLV, endoRV for each slice.
@@ -117,11 +117,11 @@ def masks2ContoursLA(LA_segs, resultsDir, frameNum, numSlices, config):
         slice2Contours(inputsList, outputsList, config, figaxs, i, "LA")
 
     # Return a dictionary.
-    return {"endoLV": LVendoContours,
-            "epiLV": LVepiContours,
-            "endoRVFW": RVFWendoContours,
-            "epiRVFW": RVFWepiContours,
-            "RVSept": RVseptContours}
+    return {"LVendo": LVendoContours,
+            "LVepi": LVepiContours,
+            "RVFWendo": RVFWendoContours,
+            "RVFWepi": RVFWepiContours,
+            "RVsept": RVseptContours}
 
 def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
     # Check validity of SA_LA.
