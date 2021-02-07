@@ -2,6 +2,7 @@ import csv
 from glob import glob
 from typing import NamedTuple
 
+import matplotlib.pyplot as plt
 import nibabel as nib
 import numpy as np
 
@@ -9,13 +10,9 @@ import masks2ContoursMainUtil as mut
 import masks2ContoursUtil as ut
 from masks2Contours import masks2ContoursSA, masks2ContoursLA
 
-
 def main():
-    np.set_printoptions(suppress = True) # For debugging: don't use scientific notation when printing out ndarrays.
-
-    # Orientation for viewing plots
-    az = 214.5268
-    el = -56.0884
+    # For debugging: don't use scientific notation when printing out ndarrays.
+    np.set_printoptions(suppress = True)
 
     # Configure some settings.
     config = Config(rvWallThickness = 3, downsample = 3, upperBdNumContourPts = 200, PLOT = False, LOAD_MATLAB_VARS = False)
@@ -33,7 +30,7 @@ def main():
     LA_segs = glob(fldr + "LAX_[0-9]ch_1.nii")
     LA_names = glob(fldr + "RReg_LAX_[0-9]ch_to_Aligned_SA.nii")
 
-    # The following two functions, masks2ContoursSA() and masks2ContoursLA(), produce contour points from masks for the
+    # The following two functions, masks2ContoursSA() and masks2ContoursLA(), produce labeled contour points from masks for the
     # short and long axis image files, respectively. If PLOT == True, these contour points are displayed slice by slice
     # as they are computed.
     #
@@ -80,9 +77,6 @@ def main():
     writeResults(frameNum, includedSlices, SAContours, SAinserts, LAContours, valves, apex, fldr)
 
 def plotResults(includedSlices, SAContours, SAinserts, LAContours, valves, apex):
-    # No function from this import is used. We need this import for the 3D plotting to work.
-    import matplotlib.pyplot as plt
-
     # Unwrap valve points.
     (mv, av, tv, pv) = valves
 
@@ -99,8 +93,8 @@ def plotResults(includedSlices, SAContours, SAinserts, LAContours, valves, apex)
         h0 = ax.scatter(endoLV[:, 0], endoLV[:, 1], endoLV[:, 2], marker=".", color="green")
         h1 = ax.scatter(epiLV[:, 0], epiLV[:, 1], epiLV[:, 2], marker=".", color="blue")
         h2 = ax.scatter(endoRVFW[:, 0], endoRVFW[:, 1], endoRVFW[:, 2], marker=".", color="red")
-        h3 = ax.scatter(epiRVFW[:, 0], epiRVFW[:, 1], epiRVFW[:, 2], marker=".", color="yellow")
-        h4 = ax.scatter(RVsept[:, 0], RVsept[:, 1], RVsept[:, 2], marker=".", color="blue")
+        h3 = ax.scatter(epiRVFW[:, 0], epiRVFW[:, 1], epiRVFW[:, 2], marker=".", color="blue")
+        h4 = ax.scatter(RVsept[:, 0], RVsept[:, 1], RVsept[:, 2], marker=".", color="yellow")
         h5 = ax.scatter(RVinserts[:, 0], RVinserts[:, 1], RVinserts[:, 2], s=50, color="red")
 
     # Plot valve points.
@@ -123,12 +117,12 @@ def plotResults(includedSlices, SAContours, SAinserts, LAContours, valves, apex)
         ax.scatter(endoLV[:, 0], endoLV[:, 1], endoLV[:, 2], marker=".", color="green")
         ax.scatter(epiLV[:, 0], epiLV[:, 1], epiLV[:, 2], marker=".", color="blue")
         ax.scatter(endoRVFW[:, 0], endoRVFW[:, 1], endoRVFW[:, 2], marker=".", color="red")
-        ax.scatter(epiRVFW[:, 0], epiRVFW[:, 1], epiRVFW[:, 2], marker=".", color="yellow")
-        ax.scatter(RVsept[:, 0], RVsept[:, 1], RVsept[:, 2], marker=".", color="blue")
+        ax.scatter(epiRVFW[:, 0], epiRVFW[:, 1], epiRVFW[:, 2], marker=".", color="blue")
+        ax.scatter(RVsept[:, 0], RVsept[:, 1], RVsept[:, 2], marker=".", color="yellow")
 
     ax.view_init()
     ax.legend((h0, h1, h2, h3, h4, h5, h6, h7, h8, h9),
-              ("LV endo", "Epi", "RVsept", "RVFW endo", "RVFW epi", "RV inserts",
+              ("LV endo", "Epi", "RVFW endo", "RVFW epi", "RV sept", "RV inserts",
                "Mitral valve", "Aortic valve", "Tricuspid valve", "Apex"))
     plt.show()  # Must use plt.show() instead of fig.show(). Might have something to do with https://github.com/matplotlib/matplotlib/issues/13101#issuecomment-452032924
 
