@@ -11,7 +11,7 @@ from SelectFromCollection import SelectFromCollection
 
 def masks2ContoursSA(segName, frameNum, config):
     # Read the 3D segmentation, transform matrix, and other geometry info from the NIFTI file.
-    (seg, transform, pixScale, pixSpacing) = readFromNIFTI(segName, frameNum)
+    (seg, transform, pixSpacing) = readFromNIFTI(segName, frameNum)
     numSlices = seg.shape[2]
 
     # Separate out LV endo, LV epi, and RV endo segmentations.
@@ -37,7 +37,7 @@ def masks2ContoursSA(segName, frameNum, config):
 
     # Loop over slices and get contours one slice at a time.
     for i in range(0, numSlices):
-        inputsList = (endoLV[:, :, i], epiLV[:, :, i], endoRV[:, :, i], transform, pixScale, pixSpacing) #Note the last 3 args are the same every iteration.
+        inputsList = (endoLV[:, :, i], epiLV[:, :, i], endoRV[:, :, i], transform, pixSpacing) #Note the last 3 args are the same every iteration.
         outputsList = (endoLVContours, epiLVContours, RVSContours, endoRVFWContours, epiRVFWContours, RVInserts)
         figaxs = None
         if config.PLOT:  # figaxs is possibly None (but this is fine because it is only used when config.PLOT == True)
@@ -78,15 +78,14 @@ def masks2ContoursSA(segName, frameNum, config):
 
 def masks2ContoursLA(LA_segs, resultsDir, frameNum, numSlices, config):
     # Precompute (more accurately, "pre-read") endoLV, epiLV, endoRV for each slice.
-    # Also precompute transform, pixScale, and pix_spacing for each slice.
-    (endoLVList, epiLVList, endoRVList, transformList, pixScaleList, pixSpacingList) = ([], [], [], [], [], [])
+    # Also precompute transform and pix_spacing for each slice.
+    (endoLVList, epiLVList, endoRVList, transformList, pixSpacingList) = ([], [], [], [], [])
     for i in range(0, numSlices):
-        (seg, transform, pixScale, pixSpacing) = readFromNIFTI(LA_segs[i], frameNum)
+        (seg, transform, pixSpacing) = readFromNIFTI(LA_segs[i], frameNum)
         endoLVList.append(np.squeeze(seg == 1))
         epiLVList.append(np.squeeze((seg <= 2) * (seg > 0)))
         endoRVList.append(np.squeeze(seg == 3))
         transformList.append(transform)
-        pixScaleList.append(pixScale)
         pixSpacingList.append(pixSpacing)
 
     # Initialize variables.
@@ -110,7 +109,7 @@ def masks2ContoursLA(LA_segs, resultsDir, frameNum, numSlices, config):
         tmp = LA_segs[i].split("\\")
         tmpLA = tmp[-1].split("_")
 
-        inputsList = (endoLVList[i], epiLVList[i], endoRVList[i], transformList[i], pixScaleList[i], pixSpacingList[i])
+        inputsList = (endoLVList[i], epiLVList[i], endoRVList[i], transformList[i], pixSpacingList[i])
         outputsList = (endoLVContours, epiLVContours, RVSContours, endoRVFWContours, epiRVFWContours)
         figaxs = None
         if config.PLOT: #figaxs is possibly None (but this is fine because it is only used when config.PLOT == True)
@@ -131,7 +130,7 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         raise ValueError("SA_LA must either be \"SA\" or \"LA\".")
 
     # Unpack tuples passed in as input.
-    (endoLV, epiLV, endoRV, transform, pixScale, pixSpacing) = inputsList
+    (endoLV, epiLV, endoRV, transform, pixSpacing) = inputsList
 
     if SA_LA == "sa":
         (endoLVContours, epiLVContours, RVSContours, endoRVFWContours, epiRVFWContours, RVInserts) = outputsList
@@ -206,7 +205,7 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         if config.PLOT and not LVEndoIsEmptyAfterCleaning:
             subplotHelper(axs[0], title = "LV Endocardium", maskSlice = np.squeeze(endoLV),
                           contours = LVendoSContours, color = "red")
-        contoursToImageCoords(LVendoSContours, transform, pixScale, sliceIndex, endoLVContours, SA_LA)  # This call writes to "endoLVContours".
+        contoursToImageCoords(LVendoSContours, transform, sliceIndex, endoLVContours, SA_LA)  # This call writes to "endoLVContours".
 
     # LV epi
     if not LVEpiIsEmpty:
@@ -223,7 +222,7 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         if config.PLOT and not LVEpiIsEmptyAfterCleaning:
             subplotHelper(axs[1], title = "LV Epicardium", maskSlice = np.squeeze(epiLV),
                           contours = LVepiSContours, color = "blue")
-        contoursToImageCoords(LVepiSContours, transform, pixScale, sliceIndex, epiLVContours, SA_LA)  # This call writes to "epiLVContours".
+        contoursToImageCoords(LVepiSContours, transform, sliceIndex, epiLVContours, SA_LA)  # This call writes to "epiLVContours".
 
     # RV
     if not RVEndoIsEmpty:
@@ -270,8 +269,8 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
             ps2 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = RVFWSContours, color ="green")
             subplotHelperMulti(axs[2], plotSettingsList = [ps1, ps2], title = "RV Endocardium")
 
-        contoursToImageCoords(RVSeptSContours, transform, pixScale, sliceIndex, RVSContours, SA_LA)
-        contoursToImageCoords(RVFWSContours, transform, pixScale, sliceIndex, endoRVFWContours, SA_LA)
+        contoursToImageCoords(RVSeptSContours, transform, sliceIndex, RVSContours, SA_LA)
+        contoursToImageCoords(RVFWSContours, transform, sliceIndex, endoRVFWContours, SA_LA)
 
         # If doing short axis, save RV insert coordinates.
         if SA_LA == "sa" and (tmpRV_insertIndices is not None and tmpRV_insertIndices.size != 0):
@@ -282,7 +281,7 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
             RVEndoNormals = ut.lineNormals2D(RVFWSContours)
             RVepiSlice = RVFWSContours - np.ceil(config.rvWallThickness / pixSpacing) * RVEndoNormals \
                 if RVFWSContours.size != 0 and RVEndoNormals.size != 0 else np.array([])
-            contoursToImageCoords(RVepiSlice, transform, pixScale, sliceIndex, epiRVFWContours, "SA")
+            contoursToImageCoords(RVepiSlice, transform, sliceIndex, epiRVFWContours, "SA")
         else:
             # Double check that normal is pointing towards epicardium by checking to see if epi points are inside the alpha shape
             # created by the endocardial points.
@@ -303,7 +302,7 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
             # if sum(countIN)/length(countIN) > 0.5 % If more than 50% of epi points are inside of the alpha shape
             #    RVepiSlice = RVFWSContours - N*(rv_wall/pixSpacing); % Reverse the normal direction
 
-            contoursToImageCoords(RVepiSlice, transform, pixScale, sliceIndex, epiRVFWContours, "LA")
+            contoursToImageCoords(RVepiSlice, transform, sliceIndex, epiRVFWContours, "LA")
 
     # Show the figure for .5 seconds if config.PLOT is True.
     if config.PLOT and not (LVEndoIsEmpty or LVEpiIsEmpty or RVEndoIsEmpty):
@@ -313,7 +312,7 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
             #if plt.waitforbuttonpress(timeout = .5) is None: break
 
 # Helper function for converting contours to an image coordinate system. This function writes to "contours".
-def contoursToImageCoords(maskSlice, transform, pixScale, sliceIndex, contours, SA_LA):
+def contoursToImageCoords(maskSlice, transform, sliceIndex, contours, SA_LA):
     SA_LA = SA_LA.lower()
     if SA_LA == "sa":
         thirdComp = sliceIndex
@@ -375,7 +374,7 @@ def subplotHelper(ax, title, maskSlice, contours, color, size = .5, clear = True
     return ax.scatter(x = contours[:, 0], y = contours[:, 1], s = size, c = color) # Most uses of this function will not make use of the output returned.
 
 # Helper function used by masks2ContoursSA() and masks2ContoursLA().
-# Returns (seg, transform, pixScale, pixSpacing).
+# Returns (seg, transform, pixSpacing).
 def readFromNIFTI(segName, frameNum):
     # Load NIFTI image and its header.
     img = nib.load(segName)
@@ -391,20 +390,13 @@ def readFromNIFTI(segName, frameNum):
     transform = img.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
     transform[0:2, :] = -transform[0:2, :] # This edit has to do with RAS system in Nifti
 
-    # Initialize pixScale. In the MATLAB script, pixScale was a column vector. Here, it will be a row vector.
-    epsilon = .0001
-    pixdim = hdr.structarr["pixdim"][1:3 + 1]
-    if np.linalg.norm(transform[1:3 + 1, 0]) - 1 < epsilon:
-        pixScale = pixdim  # Here we are manually going into the header file's data. This is somewhat dangerous- maybe it can be done a better way?
-    else:
-        pixScale = np.array([1, 1, 1])
-
-    # Initialize one last thing. In MATLAB, pix_spacing is info.PixelDimensions(1). After converting from 1-based
+    # Initialize pixSpacing. In MATLAB, pix_spacing is info.PixelDimensions(1). After converting from 1-based
     # indexing to 0-based indexing, one might think that that means pixSpacing should be pixdim[0], but this is not the
     # case due to how nibabel stores NIFTI headers.
+    pixdim = hdr.structarr["pixdim"][1:3 + 1]
     pixSpacing = pixdim[1]
 
-    return (seg, transform, pixScale, pixSpacing)
+    return (seg, transform, pixSpacing)
 
 # maskSlice is a 2D ndarray, i.e it is a m x n ndarray for some m, n. This function returns a m x 2 ndarray, where
 # each row in the array represents a point in the contour around maskSlice.
