@@ -206,7 +206,7 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         if config.PLOT and not LVEndoIsEmptyAfterCleaning:
             subplotHelper(axs[0], title = "LV Endocardium", maskSlice = np.squeeze(endoLV),
                           contours = LVendoSContours, color = "red")
-            contoursToImageCoords(LVendoSContours, transform, pixScale, sliceIndex, endoLVContours, SA_LA)  # This call writes to "endoLVContours".
+        contoursToImageCoords(LVendoSContours, transform, pixScale, sliceIndex, endoLVContours, SA_LA)  # This call writes to "endoLVContours".
 
     # LV epi
     if not LVEpiIsEmpty:
@@ -223,7 +223,7 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         if config.PLOT and not LVEpiIsEmptyAfterCleaning:
             subplotHelper(axs[1], title = "LV Epicardium", maskSlice = np.squeeze(epiLV),
                           contours = LVepiSContours, color = "blue")
-            contoursToImageCoords(LVepiSContours, transform, pixScale, sliceIndex, epiLVContours, SA_LA)  # This call writes to "epiLVContours".
+        contoursToImageCoords(LVepiSContours, transform, pixScale, sliceIndex, epiLVContours, SA_LA)  # This call writes to "epiLVContours".
 
     # RV
     if not RVEndoIsEmpty:
@@ -251,18 +251,19 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
 
             # After the user has pressed "Enter", control will be returned to this point.
 
-            # The fig.show() call at the very end of this function will not work unless we steal some "dummy" figure's figure manager
-            # and give it to fig.
-            #
-            # This is because plt.close("all"), which is called by the callback function that responds
-            # when "Enter" is pressed, destroys all figure managers owned by figures that are shown. (And we
-            # unfortunately do have to use plt.close("all") in order to get the matplotlib event loop to exit).
-            #
-            # The following code was taken from https://stackoverflow.com/questions/31729948/matplotlib-how-to-show-a-figure-that-has-been-closed.
-            dummy = plt.figure()
-            new_manager = dummy.canvas.manager
-            new_manager.canvas.figure = fig
-            fig.set_canvas(new_manager.canvas)
+            if config.PLOT:
+                # The fig.show() call at the very end of this function will not work unless we steal some "dummy" figure's figure manager
+                # and give it to fig.
+                #
+                # This is because plt.close("all"), which is called by the callback function that responds
+                # when "Enter" is pressed, destroys all figure managers owned by figures that are shown. (And we
+                # unfortunately do have to use plt.close("all") in order to get the matplotlib event loop to exit).
+                #
+                # The following code was taken from https://stackoverflow.com/questions/31729948/matplotlib-how-to-show-a-figure-that-has-been-closed.
+                dummy = plt.figure()
+                new_manager = dummy.canvas.manager
+                new_manager.canvas.figure = fig
+                fig.set_canvas(new_manager.canvas)
 
         if config.PLOT and not RVEndoIsEmptyAfterCleaning:
             ps1 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = RVSeptSContours, color ="yellow")
@@ -405,19 +406,19 @@ def readFromNIFTI(segName, frameNum):
 
     return (seg, transform, pixScale, pixSpacing)
 
-# mask2D is a 2D ndarray, i.e it is a m x n ndarray for some m, n. This function returns a m x 2 ndarray, where
-# each row in the array represents a point in the contour around mask2D.
-def getContoursFromMask(mask2D, irregMaxSize):
+# maskSlice is a 2D ndarray, i.e it is a m x n ndarray for some m, n. This function returns a m x 2 ndarray, where
+# each row in the array represents a point in the contour around maskSlice.
+def getContoursFromMask(maskSlice, irregMaxSize):
     # First, clean the mask.
 
     # Remove irregularites with fewer than irregMaxSize pixels.Note, the "min_size" parameter to this function is
     # incorrectly named, and should really be called "max_size".
-    mask2D = morphology.remove_small_objects(np.squeeze(mask2D), min_size=irregMaxSize, connectivity=2)  # Might have to come back and see if connectivity = 2 was the right choice
+    maskSlice = morphology.remove_small_objects(np.squeeze(maskSlice), min_size=irregMaxSize, connectivity=2)  # Might have to come back and see if connectivity = 2 was the right choice
 
     # Fill in the holes left by the removal (code from https://scikit-image.org/docs/dev/auto_examples/features_detection/plot_holes_and_peaks.html).
-    seed = np.copy(mask2D)
-    seed[1:-1, 1:-1] = mask2D.max()
-    mask2D = np.squeeze(morphology.reconstruction(seed, mask2D, method='erosion'))
+    seed = np.copy(maskSlice)
+    seed[1:-1, 1:-1] = maskSlice.max()
+    maskSlice = np.squeeze(morphology.reconstruction(seed, maskSlice, method='erosion'))
 
     # The mask is now cleaned; we can use measure.find contours() now.
 
@@ -428,7 +429,7 @@ def getContoursFromMask(mask2D, irregMaxSize):
     # In particular, given a binarized array, do not choose to find contours at the low or high value of the array. This
     # will often yield degenerate contours, especially around structures that are a single array element wide. Instead
     # choose a middle value, as above."
-    lst = measure.find_contours(mask2D, level = .5)
+    lst = measure.find_contours(maskSlice, level = .5)
 
     # lst is a list of m_ x 2 ndarrays; the np.stack with axis = 0 used below converts
     # this list of ndarrays into a single ndarray by concatenating rows.
