@@ -39,6 +39,38 @@ def main():
     (SAContours, SAinserts) = masks2ContoursSA(segName, frameNum, config)
     LAContours = masks2ContoursLA(LA_segs, resultsDir, frameNum, numSlices = len(LA_names), config = config)
 
+    # Get valve points.
+    valves = getValvePoints(frameNum, fldr, imgName)
+
+    # Initialize SAslices to hold the slices we will soon iterate over.
+    # Short axis slices without any contours are omitted.
+    SAslices = getSAslices(SAContours)
+
+    # Calculate apex using "method 2" from the MATLAB script.
+    LA_LVepiContours = LAContours["LVepi"]
+    epiPts1 = np.squeeze(LA_LVepiContours[:, :, 0])
+    epiPts2 = np.squeeze(LA_LVepiContours[:, :, 2])
+    apex = mut.calcApex(epiPts1, epiPts2)
+
+    # Plot the results.
+    plotResults(SAslices, SAContours, SAinserts, LAContours, valves, apex)
+
+    # Write the results to two text files.
+    writeResults(frameNum, SAslices, SAContours, SAinserts, LAContours, valves, apex, fldr)
+
+def getSAslices(SAContours):
+    SA_LVendoContours = SAContours["LVendo"]
+    slicesToKeep = np.squeeze(SA_LVendoContours[0, 0, :]).astype(int)
+    slicesToOmit1 = np.array(
+        [i for i in range(SA_LVendoContours.shape[2]) if prepareContour(SA_LVendoContours, i).size == 0])
+    slicesToOmit2 = np.logical_not(slicesToKeep)  # is 1 wherever slicesToKeep was 0.
+    slicesToOmit = np.unique(np.concatenate((slicesToOmit1, slicesToOmit2)).astype(int))
+    numSASlices = SA_LVendoContours.shape[2]
+    SAslices = np.linspace(1, numSASlices, numSASlices)
+    SAslices = ut.deleteHelper(SAslices, slicesToOmit, axis=0).astype(int)
+    return SAslices - 1  # convert to Python indexing
+
+def getValvePoints(frameNum, fldr, imgName):
     # Get valve points for mitral valve (mv), tricuspid valve (tv), aortic valve (av), and pulmonary valve (pv).
     # Note: the valve points computed by this Python script are slightly different than those produced by MATLAB because
     # the interpolation function used in this code, np.interp(), uses a different interplation method than the MATLAB interp1().
@@ -46,35 +78,12 @@ def main():
     (mv, tv, av, pv) = mut.manuallyCompileValvePoints(fldr, numFrames, frameNum)
 
     # Remove rows that are all zero from mv, tv, av, pv.
-    mv = np.reshape(mv, (-1, 3)) # Reshape mv to have shape m x 3 for some m (the -1 indicates an unspecified value).
+    mv = np.reshape(mv, (-1, 3))  # Reshape mv to have shape m x 3 for some m (the -1 indicates an unspecified value).
     mv = ut.removeZerorows(mv)
     tv = ut.removeZerorows(tv)
     av = ut.removeZerorows(av)
     pv = ut.removeZerorows(pv)
-    valves = (mv, av, tv, pv)
-
-    # Omit short axis slices without any contours. Initialize includedSlices to hold the slices we will soon iterate over.
-    SAendoLVContours = SAContours["LVendo"]
-    slicesToKeep = np.squeeze(SAendoLVContours[0, 0, :]).astype(int)
-    slicesToOmit1 = np.array([i for i in range(SAendoLVContours.shape[2]) if prepareContour(SAendoLVContours, i).size == 0])
-    slicesToOmit2 = np.logical_not(slicesToKeep) # is 1 wherever slicesToKeep was 0.
-    slicesToOmit = np.unique(np.concatenate((slicesToOmit1, slicesToOmit2)).astype(int))
-    numSASlices = SAendoLVContours.shape[2]
-    includedSlices = np.linspace(1, numSASlices, numSASlices)
-    includedSlices = ut.deleteHelper(includedSlices, slicesToOmit, axis = 0).astype(int)
-    includedSlices = includedSlices - 1 # convert to Python indexing
-
-    # Calculate apex using "method 2" from the MATLAB script.
-    LAepiLVContours = LAContours["LVepi"]
-    epiPts1 = np.squeeze(LAepiLVContours[:, :, 0])
-    epiPts2 = np.squeeze(LAepiLVContours[:, :, 2])
-    apex = mut.calcApex(epiPts1, epiPts2)
-
-    # Plot the results.
-    plotResults(includedSlices, SAContours, SAinserts, LAContours, valves, apex)
-
-    # Write the results to two text files.
-    writeResults(frameNum, includedSlices, SAContours, SAinserts, LAContours, valves, apex, fldr)
+    return (mv, tv, av, pv)
 
 def plotResults(includedSlices, SAContours, SAinserts, LAContours, valves, apex):
     # Unwrap valve points.
