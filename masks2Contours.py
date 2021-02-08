@@ -130,8 +130,9 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         raise ValueError("SA_LA must either be \"SA\" or \"LA\".")
 
     # Unpack tuples passed in as input.
-    (endoLV, epiLV, endoRV, transform, pixSpacing) = inputsList
+    (LVendo, LVepi, RVendo, transform, pixSpacing) = inputsList
 
+    # Still unpacking stuff...
     if SA_LA == "sa":
         (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours, RVinserts) = outputsList
     else: # SA_LA == "la"
@@ -140,11 +141,11 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
     if config.PLOT:
         (fig, axs) = figaxs
 
-    # Get contours for each slice in the different regions of the heart.
-    # In the following variable names, "CS" stands for "contour slice".
-    LVendoCS = getContoursFromMask(endoLV, irregMaxSize = 20)
-    LVepiCS = getContoursFromMask(epiLV, irregMaxSize = 20)
-    RVendoCS = getContoursFromMask(endoRV, irregMaxSize = 20)
+    # Get contours for each slice in the different regions of the heart. In the following variable names,
+    # "CS" stands for "contour slice".
+    LVendoCS = getContoursFromMask(LVendo, irregMaxSize = 20)
+    LVepiCS = getContoursFromMask(LVepi, irregMaxSize = 20)
+    RVendoCS = getContoursFromMask(RVendo, irregMaxSize = 20)
 
     # Load MATLAB variables if config indicates that we should do so.
     if config.LOAD_MATLAB_VARS:
@@ -164,7 +165,7 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         # Replace the Python vars with the MATLAB ones.
         [LVendoCS, LVepiCS, RVendoCS] = [LVendoMAT, LVepiMAT, RVendoMAT] # redundant, but gets point across best
 
-    # For some reason, it's necessary to swap the axes when nibabel is used to load the nifti files.
+    # For some reason, nibabel loads the NIFTI files in a way such that it's necessary to swap the axes.
     if not config.LOAD_MATLAB_VARS:
         LVendoIsEmpty = LVendoCS is None or np.max(LVendoCS.shape) <= 2
         LVepiIsEmpty = LVepiCS is None or np.max(LVepiCS.shape) <= 2
@@ -181,12 +182,12 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
     # Recall "CS" stands for "contour slice".
     [RVseptCS, ia, ib] = ut.sharedRows(LVepiCS, RVendoCS)
     RVFW_CS = RVendoCS
-    RVFW_CS = ut.deleteHelper(RVFW_CS, ib, axis = 0)  # In tmpRVFW, delete the rows with index ib.
+    RVFW_CS = ut.deleteHelper(RVFW_CS, ib, axis = 0)  # In RVFW_CS, delete the rows with index ib.
 
     # Remove RVS contour points from LV epi contour
     LVepiCS = ut.deleteHelper(LVepiCS, ia, axis = 0)  # In LVepiCS, delete the rows with index ia.
 
-    # If doing long axis, remove line segments at base which are common to endoLV and epiLV.
+    # If doing long axis, remove line segments at base which are common to LVendoCS and LVepiCS.
     if SA_LA == "la":
         [wont_use_this_var, ia, ib] = ut.sharedRows(LVendoCS, LVepiCS)
         LVendoCS = ut.deleteHelper(LVendoCS, ia, axis = 0)
@@ -204,24 +205,19 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         # If a plot is desired and contours exist, plot the mask and contour. (Contours might not exist, i.e. LVendoCS might be None, due to the recent updates).
         LVEndoIsEmptyAfterCleaning = LVendoCS is None or LVendoCS.size == 0
         if config.PLOT and not LVEndoIsEmptyAfterCleaning:
-            subplotHelper(axs[0], title = "LV Endocardium", maskSlice = np.squeeze(endoLV),
-                          contours = LVendoCS, color = "red")
+            subplotHelper(axs[0], title = "LV Endocardium", maskSlice = np.squeeze(LVendo), contours = LVendoCS, color = "red")
 
         contoursToImageCoords(LVendoCS, transform, sliceIndex, LVendoContours, SA_LA)  # This call writes to "endoLVContours".
 
     # LV epi
     if not LVepiIsEmpty:
-        # In this case, we do basically the same thing as above, except with LVepiCS, epiLVmask, and epiLVContours instead of
-        # LVendoCS, endoLVmask, and endoLVContours. (A function is not used to generalize the work done by this and
-        # the previous case because, since the next case doesn't exactly follow the same format, writing such a function
-        # would do more to obfusticate than to simplify).
-
+        # In this case, we do basically the same thing as above, except with LVepiCS, LVepi, and LVepiContours instead of
+        # LVendoCS, LVendo, and LVendoContours.
         LVepiCS = cleanContours(LVepiCS, config.downsample)
 
-        # If a plot is desired and contours exist, plot the mask and contour. (Contours might not exist, i.e. LVendoCS might be None, due to the recent updates).
-        LVEpiIsEmptyAfterCleaning = LVendoCS is None or LVendoCS.size == 0
+        LVEpiIsEmptyAfterCleaning = LVepiCS is None or LVepiCS.size == 0
         if config.PLOT and not LVEpiIsEmptyAfterCleaning:
-            subplotHelper(axs[1], title = "LV Epicardium", maskSlice = np.squeeze(epiLV),
+            subplotHelper(axs[1], title = "LV Epicardium", maskSlice = np.squeeze(LVepi),
                           contours = LVepiCS, color = "blue")
 
         contoursToImageCoords(LVepiCS, transform, sliceIndex, LVepiContours, SA_LA)  # This call writes to "epiLVContours".
@@ -241,7 +237,7 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         if SA_LA == "la" and not RVEndoIsEmptyAfterCleaning:
             figI, axI = plt.subplots() # I for "inspection"
             title = "Select points you would like to remove. Click and drag to lasso select.\n The zoom tool may also be helpful."
-            pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(endoRV), contours = RVFW_CS, color = "green", size = 20)
+            pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(RVendo), contours = RVFW_CS, color = "green", size = 20)
 
             # Create a lasso selector. It automatically is able to be used after plt.show().
             lassoSelector = SelectFromCollection(figI, axI, pts)
@@ -267,8 +263,8 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
                 fig.set_canvas(new_manager.canvas)
 
         if config.PLOT and not RVEndoIsEmptyAfterCleaning:
-            ps1 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = RVseptCS, color ="yellow")
-            ps2 = PlotSettings(maskSlice = np.squeeze(endoRV), contours = RVFW_CS, color ="green")
+            ps1 = PlotSettings(maskSlice = np.squeeze(RVendo), contours = RVseptCS, color ="yellow")
+            ps2 = PlotSettings(maskSlice = np.squeeze(RVendo), contours = RVFW_CS, color ="green")
             subplotHelperMulti(axs[2], plotSettingsList = [ps1, ps2], title = "RV Endocardium")
 
         contoursToImageCoords(RVseptCS, transform, sliceIndex, RVseptContours, SA_LA)

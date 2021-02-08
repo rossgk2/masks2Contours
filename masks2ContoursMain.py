@@ -23,7 +23,7 @@ def main():
 
     # Configure some settings.
     config = Config(rvWallThickness = 3, downsample = 3, upperBdNumContourPts = 200, PLOT = False,
-                    LOAD_MATLAB_VARS = False)
+                    LOAD_MATLAB_VARS = True)
     frameNum = 1  # Index of frame to be segmented.
 
     # Get filepaths ready.
