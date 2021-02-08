@@ -10,6 +10,12 @@ import masks2ContoursMainUtil as mut
 import masks2ContoursUtil as ut
 from masks2Contours import masks2ContoursSA, masks2ContoursLA
 
+class Config(NamedTuple):
+    rvWallThickness: int  # RV wall thickness, in [mm] (don't have contours); e.g. 3 ==> downsample by taking every third point
+    downsample: int
+    upperBdNumContourPts: int  # An upper bound on the number of contour points.
+    PLOT: bool
+    LOAD_MATLAB_VARS: bool
 
 def main():
     # For debugging: don't use scientific notation when printing out ndarrays.
@@ -59,7 +65,6 @@ def main():
 
     # Write the results to two text files.
     writeResults(frameNum, SAsliceIndices, SAcontours, SAinserts, LAcontours, valves, apex, fldr)
-
 
 def getValvePoints(frameNum, fldr, imgName):
     # Get valve points for mitral valve (mv), tricuspid valve (tv), aortic valve (av), and pulmonary valve (pv).
@@ -237,18 +242,8 @@ def writeResults(frameNum, includedSlices, SAContours, SAinserts, LAContours, va
     # Finally, write out the apex
     writePoint(apex, LA_j_range[-1], "LA_Apex_Point", "APEX_POINT")
 
-
 def prepareContour(mask, sliceIndex):
     result = np.squeeze(mask[:, :, sliceIndex])
     return ut.removeZerorows(result)
-
-
-class Config(NamedTuple):
-    rvWallThickness: int  # RV wall thickness, in [mm] (don't have contours); e.g. 3 ==> downsample by taking every third point
-    downsample: int
-    upperBdNumContourPts: int  # An upper bound on the number of contour points.
-    PLOT: bool
-    LOAD_MATLAB_VARS: bool
-
 
 main()
