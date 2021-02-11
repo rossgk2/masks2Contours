@@ -188,10 +188,9 @@ def sharedRows(arr1, arr2):
                 sharedIndicesArr2.append(j)
 
     # Use these indices to build the matrix of shared rows.
-    _sharedRows = [arr1[i] for i in sharedIndicesArr1]
+    _sharedRows = arr1[sharedIndicesArr1, :]
 
-    # Convert everything to ndarrays.
-    _sharedRows = np.array(_sharedRows)
+    # Convert the lists of sharedIndices to ndarrays.
     sharedIndicesArr1 = np.array(sharedIndicesArr1)
     sharedIndicesArr2 = np.array(sharedIndicesArr2)
 

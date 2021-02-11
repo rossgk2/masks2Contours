@@ -214,7 +214,6 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         # In this case, we do basically the same thing as above, except with LVepiCS, LVepi, and LVepiContours instead of
         # LVendoCS, LVendo, and LVendoContours.
         LVepiCS = cleanContours(LVepiCS, config.downsample)
-
         LVEpiIsEmptyAfterCleaning = LVepiCS is None or LVepiCS.size == 0
         if config.PLOT and not LVEpiIsEmptyAfterCleaning:
             subplotHelper(axs[1], title = "LV Epicardium", maskSlice = np.squeeze(LVepi),
