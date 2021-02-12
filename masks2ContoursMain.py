@@ -102,17 +102,17 @@ def plotResults(includedSlices, SAContours, SAinserts, LAContours, valves, apex)
     # Plot short axis contours.
     fig, ax = plt.subplots(1, 1, subplot_kw = {"projection": "3d"})
     for i in includedSlices:
-        endoLV = prepareContour(SAContours["LVendo"], i)
-        epiLV = prepareContour(SAContours["LVepi"], i)
-        endoRVFW = prepareContour(SAContours["RVFWendo"], i)
-        epiRVFW = prepareContour(SAContours["RVFWepi"], i)
+        LVendo = prepareContour(SAContours["LVendo"], i)
+        LVepi = prepareContour(SAContours["LVepi"], i)
+        RVFWendo = prepareContour(SAContours["RVFWendo"], i)
+        RVFWepi = prepareContour(SAContours["RVFWepi"], i)
         RVsept = prepareContour(SAContours["RVsept"], i)
         RVinserts = prepareContour(SAinserts["RVinserts"], i)
 
-        h0 = ax.scatter(endoLV[:, 0], endoLV[:, 1], endoLV[:, 2], marker = ".", color = "green")
-        h1 = ax.scatter(epiLV[:, 0], epiLV[:, 1], epiLV[:, 2], marker = ".", color = "blue")
-        h2 = ax.scatter(endoRVFW[:, 0], endoRVFW[:, 1], endoRVFW[:, 2], marker = "d", color = "red")
-        h3 = ax.scatter(epiRVFW[:, 0], epiRVFW[:, 1], epiRVFW[:, 2], marker = ".", color = "blue")
+        h0 = ax.scatter(LVendo[:, 0], LVendo[:, 1], LVendo[:, 2], marker = ".", color = "green")
+        h1 = ax.scatter(LVepi[:, 0], LVepi[:, 1], LVepi[:, 2], marker = ".", color = "blue")
+        h2 = ax.scatter(RVFWendo[:, 0], RVFWendo[:, 1], RVFWendo[:, 2], marker = ".", color = "red")
+        h3 = ax.scatter(RVFWepi[:, 0], RVFWepi[:, 1], RVFWepi[:, 2], marker = ".", color = "blue")
         h4 = ax.scatter(RVsept[:, 0], RVsept[:, 1], RVsept[:, 2], marker = ".", color = "yellow")
         h5 = ax.scatter(RVinserts[:, 0], RVinserts[:, 1], RVinserts[:, 2], s = 50, color = "red")
 
@@ -127,16 +127,16 @@ def plotResults(includedSlices, SAContours, SAinserts, LAContours, valves, apex)
     # Plot long axis contours.
     numLASlices = LAContours["LVendo"].shape[2]
     for i in range(numLASlices):
-        endoLV = prepareContour(LAContours["LVendo"], i)
-        epiLV = prepareContour(LAContours["LVepi"], i)
-        endoRVFW = prepareContour(LAContours["RVFWendo"], i)
-        epiRVFW = prepareContour(LAContours["RVFWepi"], i)
+        LVendo = prepareContour(LAContours["LVendo"], i)
+        LVepi = prepareContour(LAContours["LVepi"], i)
+        RVFWendo = prepareContour(LAContours["RVFWendo"], i)
+        RVFWepi = prepareContour(LAContours["RVFWepi"], i)
         RVsept = prepareContour(LAContours["RVsept"], i)
 
-        ax.scatter(endoLV[:, 0], endoLV[:, 1], endoLV[:, 2], marker = ".", color = "green")
-        ax.scatter(epiLV[:, 0], epiLV[:, 1], epiLV[:, 2], marker = ".", color = "blue")
-        ax.scatter(endoRVFW[:, 0], endoRVFW[:, 1], endoRVFW[:, 2], marker = ".", s = 30, color = "red") #using s = 30 for debug
-        ax.scatter(epiRVFW[:, 0], epiRVFW[:, 1], epiRVFW[:, 2], marker = ".", color = "blue")
+        ax.scatter(LVendo[:, 0], LVendo[:, 1], LVendo[:, 2], marker = ".", color = "green")
+        ax.scatter(LVepi[:, 0], LVepi[:, 1], LVepi[:, 2], marker = ".", color = "blue")
+        ax.scatter(RVFWendo[:, 0], RVFWendo[:, 1], RVFWendo[:, 2], marker = "d", s = 30, color = "red") #using s = 30 for debug
+        ax.scatter(RVFWepi[:, 0], RVFWepi[:, 1], RVFWepi[:, 2], marker = ".", color = "blue")
         ax.scatter(RVsept[:, 0], RVsept[:, 1], RVsept[:, 2], marker = "x", color = "yellow")
 
     ax.view_init()

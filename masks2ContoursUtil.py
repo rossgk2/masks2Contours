@@ -154,8 +154,8 @@ def deleteHelper(arr, indices, axis = 0):
     if emptyNdarrayCheck(arr) or emptyListCheck(arr):
         return arr
 
-    # np.delete() does not work as expected if arr is an empty ndarray. This case fixes that.
-    # (If indices is an empty list, np.delete() works as expected, so there is no need to call emptyListCheck() here).
+    # np.delete() does not work as expected if indices is an empty ndarray. This case fixes that.
+    # (If indices is an empty list, np.delete() works as expected, so there is no need to use emptyListCheck() here).
     if emptyNdarrayCheck(indices):
         return arr
 

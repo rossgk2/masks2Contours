@@ -243,7 +243,7 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
             plt.show() # Important to use plt.show() instead of figI.show() so that the event loop runs. See https://github.com/matplotlib/matplotlib/issues/13101#issuecomment-452032924
 
             # Remove the points that were selected from the contour.
-            RVseptCS = ut.deleteHelper(RVFW_CS, lassoSelector.ind, axis = 0)
+            RVFW_CS = ut.deleteHelper(RVFW_CS, lassoSelector.ind, axis = 0)
 
             # After the user has pressed "Enter", control will be returned to this point.
 
@@ -276,16 +276,16 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         # Calculate RV epicardial wall by applying a thickness to RV endocardium.
         if SA_LA == "sa":
             RVEndoNormals = ut.lineNormals2D(RVFW_CS)
-            RVepiSlice = RVFW_CS - np.ceil(config.rvWallThickness / pixSpacing) * RVEndoNormals \
+            RVepiSC = RVFW_CS - np.ceil(config.rvWallThickness / pixSpacing) * RVEndoNormals \
                 if RVFW_CS.size != 0 and RVEndoNormals.size != 0 else np.array([])
-            contoursToImageCoords(RVepiSlice, transform, sliceIndex, RVFWepiContours, "SA")
+            contoursToImageCoords(RVepiSC, transform, sliceIndex, RVFWepiContours, "SA")
         else:
             # Double check that normal is pointing towards epicardium by checking to see if epi points are inside the alpha shape
             # created by the endocardial points.
             RVEndoNormals = ut.lineNormals2D(RVFW_CS)
-            RVepiSlice = RVFW_CS + RVEndoNormals * config.rvWallThickness / pixSpacing
-            divByZeroIndices = np.any(np.isinf(RVepiSlice), axis = 1)
-            RVepiSlice = ut.deleteHelper(RVepiSlice, divByZeroIndices, axis = 0)
+            RVepiSC = RVFW_CS + RVEndoNormals * config.rvWallThickness / pixSpacing
+            divByZeroIndices = np.any(np.isinf(RVepiSC), axis = 1)
+            RVepiSC = ut.deleteHelper(RVepiSC, divByZeroIndices, axis = 0)
 
             tmp_RV = np.vstack((RVFW_CS, RVseptCS))
             alpha = alphashape.optimizealpha(tmp_RV)
@@ -295,11 +295,11 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
 
             # https://gis.stackexchange.com/questions/208546/check-if-a-point-falls-within-a-multipolygon-with-python
 
-            # countIN = inShape(a, RVepiSlice(:,1), RVepiSlice(:,2));
+            # countIN = inShape(a, RVepiSC(:,1), RVepiSC(:,2));
             # if sum(countIN)/length(countIN) > 0.5 % If more than 50% of epi points are inside of the alpha shape
-            #    RVepiSlice = RVFW_CS - N*(rv_wall/pixSpacing); % Reverse the normal direction
+            #    RVepiSC = RVFW_CS - N*(rv_wall/pixSpacing); % Reverse the normal direction
 
-            contoursToImageCoords(RVepiSlice, transform, sliceIndex, RVFWepiContours, "LA")
+            contoursToImageCoords(RVepiSC, transform, sliceIndex, RVFWepiContours, "LA")
 
     # Show the figure for .5 seconds if config.PLOT is True.
     if config.PLOT and not (LVendoIsEmpty or LVepiIsEmpty or RVendoIsEmpty):
