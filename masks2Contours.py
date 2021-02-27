@@ -159,7 +159,6 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         LVendoCS = cleanContours(LVendoCS, config.downsample)
 
         # If a plot is desired and contours exist, plot the mask and contour. (Contours might not exist, i.e. LVendoCS might be None, due to the recent updates).
-        LVEndoIsEmptyAfterCleaning = LVendoCS is None or LVendoCS.size == 0
         contoursToImageCoords(LVendoCS, transform, sliceIndex, LVendoContours, SA_LA)  # This call writes to "endoLVContours".
 
     # LV epi
@@ -167,7 +166,6 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         # In this case, we do basically the same thing as above, except with LVepiCS, LVepi, and LVepiContours instead of
         # LVendoCS, LVendo, and LVendoContours.
         LVepiCS = cleanContours(LVepiCS, config.downsample)
-        LVEpiIsEmptyAfterCleaning = LVepiCS is None or LVepiCS.size == 0
         contoursToImageCoords(LVepiCS, transform, sliceIndex, LVepiContours, SA_LA)  # This call writes to "epiLVContours".
 
     # RV
@@ -209,27 +207,6 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
             RVepiSC = RVFW_CS - np.ceil(config.rvWallThickness / pixSpacing) * RVEndoNormals \
                 if RVFW_CS.size != 0 and RVEndoNormals.size != 0 else np.array([])
             contoursToImageCoords(RVepiSC, transform, sliceIndex, RVFWepiContours, "SA")
-        else:
-            # Double check that normal is pointing towards epicardium by checking to see if epi points are inside the alpha shape
-            # created by the endocardial points.
-            RVEndoNormals = ut.lineNormals2D(RVFW_CS)
-            RVepiSC = RVFW_CS + RVEndoNormals * config.rvWallThickness / pixSpacing
-            divByZeroIndices = np.any(np.isinf(RVepiSC), axis = 1)
-            RVepiSC = ut.deleteHelper(RVepiSC, divByZeroIndices, axis = 0)
-
-            tmp_RV = np.vstack((RVFW_CS, RVseptCS))
-            alpha = alphashape.optimizealpha(tmp_RV)
-            shape = alphashape.alphashape(tmp_RV, alpha * 2)
-
-            # FINISH THIS else STATEMENT #
-
-            # https://gis.stackexchange.com/questions/208546/check-if-a-point-falls-within-a-multipolygon-with-python
-
-            # countIN = inShape(a, RVepiSC(:,1), RVepiSC(:,2));
-            # if sum(countIN)/length(countIN) > 0.5 % If more than 50% of epi points are inside of the alpha shape
-            #    RVepiSC = RVFW_CS - N*(rv_wall/pixSpacing); % Reverse the normal direction
-
-            contoursToImageCoords(RVepiSC, transform, sliceIndex, RVFWepiContours, "LA")
 
 # Helper function for converting contours to an image coordinate system. This function writes to "contours".
 def contoursToImageCoords(maskSlice, transform, sliceIndex, contours, SA_LA):
