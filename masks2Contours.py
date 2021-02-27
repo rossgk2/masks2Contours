@@ -173,18 +173,6 @@ def slice2Contours(inputsList, outputsList, config, sliceIndex, SA_LA):
 
         RVEndoIsEmptyAfterCleaning = (RVFW_CS is None or RVseptCS is None) or (RVFW_CS.size == 0 or RVseptCS.size == 0)
 
-        # Wrap up stuff we've computed so that it can be passed to slice2ContoursPt2() in the below.
-        RVdata = (RVseptCS, RVFW_CS, RVseptContours, RVFWendoContours, RVFWepiContours)
-        if SA_LA == "sa":
-            RVdata_SAonly = (tmpRV_insertIndices, RVinserts)
-        geoData = (transform, pixSpacing)
-        otherData = (config, SA_LA)
-
-        if SA_LA == "sa":
-            pt2Data = {"RVdata": RVdata, "RVdata_SAonly" : RVdata_SAonly, "geoData": geoData, "otherData": otherData}
-        else: # SA_LA == "la"
-            pt2Data = {"RVdata": RVdata, "geoData": geoData, "otherData": otherData}
-
         # If doing long axis, remove basal line segment in RVFW LA contour.
         if SA_LA == "la" and not RVEndoIsEmptyAfterCleaning:
             figI, axI = plt.subplots() # I for "inspection"
@@ -197,6 +185,19 @@ def slice2Contours(inputsList, outputsList, config, sliceIndex, SA_LA):
             # Remove the points that were selected from the contour.
             RVFW_CS = ut.deleteHelper(RVFW_CS, lassoSelector.ind, axis = 0)
 
+        # Wrap up stuff we've computed so that it can be passed to slice2ContoursPt2() in the below.
+        RVdata = (RVseptCS, RVFW_CS, RVseptContours, RVFWendoContours, RVFWepiContours)
+        if SA_LA == "sa":
+            RVdata_SAonly = (tmpRV_insertIndices, RVinserts)
+        geoData = (transform, pixSpacing)
+        otherData = (config, SA_LA)
+
+        if SA_LA == "sa":
+            pt2Data = {"RVdata": RVdata, "RVdata_SAonly": RVdata_SAonly, "geoData": geoData, "otherData": otherData}
+        else:  # SA_LA == "la"
+            pt2Data = {"RVdata": RVdata, "geoData": geoData, "otherData": otherData}
+
+        if SA_LA == "la" and not RVEndoIsEmptyAfterCleaning:
             # Store the stuff we've computed as a member of the lassoSelector; the callback function
             # lassoSelector.key_press() function will call slice2ContoursPt2() and make use of this data to finish up.
             # To see how slice2ContoursPt() will be called, look in the "else" case below.
