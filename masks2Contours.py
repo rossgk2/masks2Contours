@@ -157,14 +157,10 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
     # LV endo
     if not LVendoIsEmpty:
         LVendoCS = cleanContours(LVendoCS, config.downsample)
-
-        # If a plot is desired and contours exist, plot the mask and contour. (Contours might not exist, i.e. LVendoCS might be None, due to the recent updates).
         contoursToImageCoords(LVendoCS, transform, sliceIndex, LVendoContours, SA_LA)  # This call writes to "endoLVContours".
 
     # LV epi
     if not LVepiIsEmpty:
-        # In this case, we do basically the same thing as above, except with LVepiCS, LVepi, and LVepiContours instead of
-        # LVendoCS, LVendo, and LVendoContours.
         LVepiCS = cleanContours(LVepiCS, config.downsample)
         contoursToImageCoords(LVepiCS, transform, sliceIndex, LVepiContours, SA_LA)  # This call writes to "epiLVContours".
 
