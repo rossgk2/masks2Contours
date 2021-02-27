@@ -173,18 +173,6 @@ def slice2Contours(inputsList, outputsList, config, sliceIndex, SA_LA):
 
         RVEndoIsEmptyAfterCleaning = (RVFW_CS is None or RVseptCS is None) or (RVFW_CS.size == 0 or RVseptCS.size == 0)
 
-        # Wrap up stuff we've computed so that it can be passed to slice2ContoursPt2() in the below.
-        RVdata = (RVseptCS, RVFW_CS, RVseptContours, RVFWendoContours, RVFWepiContours)
-        if SA_LA == "sa":
-            RVdata_SAonly = (tmpRV_insertIndices, RVinserts)
-        geoData = (transform, pixSpacing)
-        otherData = (config, SA_LA)
-
-        if SA_LA == "sa":
-            pt2Data = {"RVdata": RVdata, "RVdata_SAonly" : RVdata_SAonly, "geoData": geoData, "otherData": otherData}
-        else: # SA_LA == "la"
-            pt2Data = {"RVdata": RVdata, "geoData": geoData, "otherData": otherData}
-
         # If doing long axis, remove basal line segment in RVFW LA contour.
         if SA_LA == "la" and not RVEndoIsEmptyAfterCleaning:
             figI, axI = plt.subplots() # I for "inspection"
@@ -193,25 +181,25 @@ def slice2Contours(inputsList, outputsList, config, sliceIndex, SA_LA):
 
             # Create a lasso selector. It automatically is able to be used after plt.show().
             lassoSelector = SelectFromCollection(figI, axI, pts)
+            plt.show() # Important to use plt.show() instead of figI.show() so that the event loop runs. See https://github.com/matplotlib/matplotlib/issues/13101#issuecomment-452032924
 
             # Remove the points that were selected from the contour.
             RVFW_CS = ut.deleteHelper(RVFW_CS, lassoSelector.ind, axis = 0)
 
-            # Store the stuff we've computed as a member of the lassoSelector; the callback function
-            # lassoSelector.key_press() function will call slice2ContoursPt2() and make use of this data to finish up.
-            # To see how slice2ContoursPt() will be called, look in the "else" case below.
-            lassoSelector.RVdata = RVdata
-            lassoSelector.sliceIndex = sliceIndex
+            # After the user has pressed "Enter", control will be returned to this point.
         else:
+            # Wrap up stuff we've computed and pass it to slice2ContoursPt2().
+            RVdata = (RVseptCS, RVFW_CS, RVseptContours, tmpRV_insertIndices, RVinserts, RVFWendoContours, RVFWepiContours)
+            geoData = (transform, pixSpacing)
+            otherData = (config, SA_LA)
+            pt2Data = {"RVdata" : RVdata, "geoData" : geoData, "otherData" : otherData}
             slice2ContoursPt2(pt2Data, sliceIndex)
 
 def slice2ContoursPt2(pt2Data, sliceIndex):
     # Unpack input.
-    (RVseptCS, RVFW_CS, RVseptContours, RVFWendoContours, RVFWepiContours) = pt2Data["RVdata"]
+    (RVseptCS, RVFW_CS, RVseptContours, tmpRV_insertIndices, RVinserts, RVFWendoContours, RVFWepiContours) = pt2Data["RVdata"]
     (transform, pixSpacing) = pt2Data["geoData"]
     (config, SA_LA) = pt2Data["otherData"]
-    if SA_LA == "sa":
-        (tmpRV_insertIndices, RVinserts) = pt2Data["RVdata_SAonly"]
 
     # Write to RVseptContours and RVFWendoContours.
     contoursToImageCoords(RVseptCS, transform, sliceIndex, RVseptContours, SA_LA)

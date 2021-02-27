@@ -1,10 +1,13 @@
 # This file is from https://matplotlib.org/3.1.1/gallery/widgets/lasso_selector_demo_sgskip.html.
-import matplotlib.pyplot as plt
+import sys
 import numpy as np
-from matplotlib.path import Path
-from matplotlib.widgets import LassoSelector
 
-import masks2Contours
+import matplotlib
+
+import matplotlib.pyplot as plt
+from matplotlib.widgets import LassoSelector
+from matplotlib.path import Path
+
 
 class SelectFromCollection(object):
     """Select indices from a matplotlib collection using `LassoSelector`.
@@ -89,7 +92,6 @@ class SelectFromCollection(object):
             self.ax.set_title("")
             self.fig.canvas.draw()
             plt.close("all")  # This closes all matplotlib windows and destroys their figure managers.
-            masks2Contours.slice2ContoursPt2(self.pt2Data, self.sliceIndex)
 
     def key_release(self, event):
         if event.key == "shift":
