@@ -14,16 +14,13 @@ class Config(NamedTuple):
     rvWallThickness: int  # RV wall thickness, in [mm] (don't have contours); e.g. 3 ==> downsample by taking every third point
     downsample: int
     upperBdNumContourPts: int  # An upper bound on the number of contour points.
-    PLOT: bool
-    LOAD_MATLAB_VARS: bool
 
 def main():
     # For debugging: don't use scientific notation when printing out ndarrays.
     np.set_printoptions(suppress = True)
 
     # Configure some settings.
-    config = Config(rvWallThickness = 3, downsample = 3, upperBdNumContourPts = 200, PLOT = False,
-                    LOAD_MATLAB_VARS = True)
+    config = Config(rvWallThickness = 3, downsample = 3, upperBdNumContourPts = 200)
     frameNum = 1  # Index of frame to be segmented.
 
     # Get filepaths ready.
@@ -39,13 +36,12 @@ def main():
     LA_names = glob(fldr + "RReg_LAX_[0-9]ch_to_Aligned_SA.nii")
 
     # The following two functions, masks2ContoursSA() and masks2ContoursLA(), produce labeled contour points from masks for the
-    # short and long axis image files, respectively. If PLOT == True, these contour points are displayed slice by slice
-    # as they are computed.
+    # short and long axis image files, respectively.
     #
     # SAcontours and LAcontours are dicts whose keys are strings such as "LVendo" or "RVsept" and whose values are
     # m x 2 ndarrays containing the contour points. SAinserts is a dict with the two keys "RVinserts" and "RVInsertsWeights".
     (SAcontours, SAinserts) = masks2ContoursSA(segName, frameNum, config)
-    LAcontours = masks2ContoursLA(LA_segs, resultsDir, frameNum, numSlices = len(LA_names), config = config)
+    LAcontours = masks2ContoursLA(LA_segs, frameNum, numSlices = len(LA_names), config = config)
 
     # Get valve points.
     valves = getValvePoints(frameNum, fldr, imgName)

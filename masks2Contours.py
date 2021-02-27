@@ -28,20 +28,11 @@ def masks2ContoursSA(segName, frameNum, config):
     RVseptContours = np.zeros([ub, 3, numSlices])
     RVinserts = np.zeros([2, 3, numSlices])
 
-    # Set up the machinery that will handle plotting.
-    if config.PLOT:
-        fig, axs = plt.subplots(1, 3)  # A Figure with a 1 x 3 grid of Axes.
-        for ax in axs:
-            ax.axis("equal")
-        fig.tight_layout()  # might use this: https://stackoverflow.com/questions/8802918/my-matplotlib-title-gets-cropped
-
     # Loop over slices and get contours one slice at a time.
     for i in range(0, numSlices):
         inputsList = (LVendo[:, :, i], LVepi[:, :, i], RVendo[:, :, i], transform, pixSpacing) #Note the last 3 args are the same every iteration.
         outputsList = (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours, RVinserts)
         figaxs = None
-        if config.PLOT:  # figaxs is possibly None (but this is fine because it is only used when config.PLOT == True)
-            figaxs = (fig, axs)
         slice2Contours(inputsList, outputsList, config, figaxs, i, "SA")
 
     # Now, calculate weights for RV insertion points.
@@ -76,7 +67,7 @@ def masks2ContoursSA(segName, frameNum, config):
             "RVsept" : RVseptContours } ,
             {"RVinserts" : RVinserts, "RVinsertsWeights" : RVinsertsWeights})
 
-def masks2ContoursLA(LA_segs, resultsDir, frameNum, numSlices, config):
+def masks2ContoursLA(LA_segs, frameNum, numSlices, config):
     # Precompute (more accurately, "pre-read") endoLV, epiLV, endoRV for each slice.
     # Also precompute transform and pix_spacing for each slice.
     (LVendoList, LVepiList, RVendoList, transformList, pixSpacingList) = ([], [], [], [], [])
@@ -96,24 +87,11 @@ def masks2ContoursLA(LA_segs, resultsDir, frameNum, numSlices, config):
     RVFWepiContours = np.zeros([ub, 3, numSlices])
     RVseptContours = np.zeros([ub, 3, numSlices])
 
-    # Set up the machinery that will handle plotting.
-    if config.PLOT:
-        fig, axs = plt.subplots(1, 3)  # A Figure with a 1 x 3 grid of Axes.
-        for ax in axs:
-            ax.axis("equal")
-        fig.tight_layout()  # might use this: https://stackoverflow.com/questions/8802918/my-matplotlib-title-gets-cropped
-
     # Loop over slices and get contours one slice at a time.
     for i in range(0, numSlices):
-        # Get name of current LA view (this seems unnecessary but I've ported it over anyway).
-        tmp = LA_segs[i].split("\\")
-        tmpLA = tmp[-1].split("_")
-
         inputsList = (LVendoList[i], LVepiList[i], RVendoList[i], transformList[i], pixSpacingList[i])
         outputsList = (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours)
         figaxs = None
-        if config.PLOT: #figaxs is possibly None (but this is fine because it is only used when config.PLOT == True)
-            figaxs = (fig, axs)
         slice2Contours(inputsList, outputsList, config, figaxs, i, "LA")
 
     # Return a dictionary.
@@ -138,9 +116,6 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
     else: # SA_LA == "la"
         (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours) = outputsList
 
-    if config.PLOT:
-        (fig, axs) = figaxs
-
     # Get contours for each slice in the different regions of the heart. In the following variable names,
     # "CS" stands for "contour slice".
     LVendoCS = getContoursFromMask(LVendo, irregMaxSize = 20)
@@ -148,35 +123,16 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
     RVendoCS = getContoursFromMask(RVendo, irregMaxSize = 20)
 
     # Load MATLAB variables if config indicates that we should do so.
-    if config.LOAD_MATLAB_VARS:
-        import scipy.io as sio
-        resultsDir = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\out"
+    LVendoIsEmpty = LVendoCS is None or np.max(LVendoCS.shape) <= 2
+    LVepiIsEmpty = LVepiCS is None or np.max(LVepiCS.shape) <= 2
+    RVendoIsEmpty = RVendoCS is None or RVendoCS.size == 0
 
-        suffix = "LA" if SA_LA == "la" else ""
-        vars = ["tmp_endoLV", "tmp_epiLV", "tmp_endoRV"]
-        result = []
-        for x in vars:
-            fldr = resultsDir + "\\" + x + suffix + "_slices\\"
-            file = fldr + x + suffix + "_slice_" + str(sliceIndex + 1) + ".mat"
-            result.append(sio.loadmat(file)[x])
-
-        [LVendoMAT, LVepiMAT, RVendoMAT] = result
-
-        # Replace the Python vars with the MATLAB ones.
-        [LVendoCS, LVepiCS, RVendoCS] = [LVendoMAT, LVepiMAT, RVendoMAT] # redundant, but gets point across best
-
-    # For some reason, nibabel loads the NIFTI files in a way such that it's necessary to swap the axes.
-    if not config.LOAD_MATLAB_VARS:
-        LVendoIsEmpty = LVendoCS is None or np.max(LVendoCS.shape) <= 2
-        LVepiIsEmpty = LVepiCS is None or np.max(LVepiCS.shape) <= 2
-        RVendoIsEmpty = RVendoCS is None or RVendoCS.size == 0
-
-        if not LVendoIsEmpty:
-            LVendoCS[:, [0, 1]] = LVendoCS[:, [1, 0]]
-        if not LVepiIsEmpty:
-            LVepiCS[:, [0, 1]] = LVepiCS[:, [1, 0]]
-        if not RVendoIsEmpty:
-            RVendoCS[:, [0, 1]] = RVendoCS[:, [1, 0]]
+    if not LVendoIsEmpty:
+        LVendoCS[:, [0, 1]] = LVendoCS[:, [1, 0]]
+    if not LVepiIsEmpty:
+        LVepiCS[:, [0, 1]] = LVepiCS[:, [1, 0]]
+    if not RVendoIsEmpty:
+        RVendoCS[:, [0, 1]] = RVendoCS[:, [1, 0]]
 
     # Differentiate contours for RVFW (free wall) and RVS (septum).
     # Recall "CS" stands for "contour slice".
@@ -204,9 +160,6 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
 
         # If a plot is desired and contours exist, plot the mask and contour. (Contours might not exist, i.e. LVendoCS might be None, due to the recent updates).
         LVEndoIsEmptyAfterCleaning = LVendoCS is None or LVendoCS.size == 0
-        if config.PLOT and not LVEndoIsEmptyAfterCleaning:
-            subplotHelper(axs[0], title = "LV Endocardium", maskSlice = np.squeeze(LVendo), contours = LVendoCS, color = "red")
-
         contoursToImageCoords(LVendoCS, transform, sliceIndex, LVendoContours, SA_LA)  # This call writes to "endoLVContours".
 
     # LV epi
@@ -215,10 +168,6 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
         # LVendoCS, LVendo, and LVendoContours.
         LVepiCS = cleanContours(LVepiCS, config.downsample)
         LVEpiIsEmptyAfterCleaning = LVepiCS is None or LVepiCS.size == 0
-        if config.PLOT and not LVEpiIsEmptyAfterCleaning:
-            subplotHelper(axs[1], title = "LV Epicardium", maskSlice = np.squeeze(LVepi),
-                          contours = LVepiCS, color = "blue")
-
         contoursToImageCoords(LVepiCS, transform, sliceIndex, LVepiContours, SA_LA)  # This call writes to "epiLVContours".
 
     # RV
@@ -246,25 +195,6 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
             RVFW_CS = ut.deleteHelper(RVFW_CS, lassoSelector.ind, axis = 0)
 
             # After the user has pressed "Enter", control will be returned to this point.
-
-            if config.PLOT:
-                # The fig.show() call at the very end of this function will not work unless we steal some "dummy" figure's figure manager
-                # and give it to fig.
-                #
-                # This is because plt.close("all"), which is called by the callback function that responds
-                # when "Enter" is pressed, destroys all figure managers owned by figures that are shown. (And we
-                # unfortunately do have to use plt.close("all") in order to get the matplotlib event loop to exit).
-                #
-                # The following code was taken from https://stackoverflow.com/questions/31729948/matplotlib-how-to-show-a-figure-that-has-been-closed.
-                dummy = plt.figure()
-                new_manager = dummy.canvas.manager
-                new_manager.canvas.figure = fig
-                fig.set_canvas(new_manager.canvas)
-
-        if config.PLOT and not RVEndoIsEmptyAfterCleaning:
-            ps1 = PlotSettings(maskSlice = np.squeeze(RVendo), contours = RVseptCS, color ="yellow")
-            ps2 = PlotSettings(maskSlice = np.squeeze(RVendo), contours = RVFW_CS, color ="green")
-            subplotHelperMulti(axs[2], plotSettingsList = [ps1, ps2], title = "RV Endocardium")
 
         contoursToImageCoords(RVseptCS, transform, sliceIndex, RVseptContours, SA_LA)
         contoursToImageCoords(RVFW_CS, transform, sliceIndex, RVFWendoContours, SA_LA)
@@ -300,13 +230,6 @@ def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
             #    RVepiSC = RVFW_CS - N*(rv_wall/pixSpacing); % Reverse the normal direction
 
             contoursToImageCoords(RVepiSC, transform, sliceIndex, RVFWepiContours, "LA")
-
-    # Show the figure for .5 seconds if config.PLOT is True.
-    if config.PLOT and not (LVendoIsEmpty or LVepiIsEmpty or RVendoIsEmpty):
-        fig.show()
-        while True:
-            if plt.waitforbuttonpress(): break
-            #if plt.waitforbuttonpress(timeout = .5) is None: break
 
 # Helper function for converting contours to an image coordinate system. This function writes to "contours".
 def contoursToImageCoords(maskSlice, transform, sliceIndex, contours, SA_LA):
