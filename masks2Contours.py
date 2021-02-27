@@ -32,7 +32,7 @@ def masks2ContoursSA(segName, frameNum, config):
     for i in range(0, numSlices):
         inputsList = (LVendo[:, :, i], LVepi[:, :, i], RVendo[:, :, i], transform, pixSpacing) #Note the last 3 args are the same every iteration.
         outputsList = (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours, RVinserts)
-        slice2Contours(inputsList, outputsList, config, i, "SA")
+        slice2ContoursPt1(inputsList, outputsList, config, i, "SA")
 
     # Now, calculate weights for RV insertion points.
 
@@ -90,7 +90,7 @@ def masks2ContoursLA(LA_segs, frameNum, numSlices, config):
     for i in range(0, numSlices):
         inputsList = (LVendoList[i], LVepiList[i], RVendoList[i], transformList[i], pixSpacingList[i])
         outputsList = (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours)
-        slice2Contours(inputsList, outputsList, config, i, "LA")
+        slice2ContoursPt1(inputsList, outputsList, config, i, "LA")
 
     # Return a dictionary.
     return {"LVendo": LVendoContours,
@@ -99,7 +99,7 @@ def masks2ContoursLA(LA_segs, frameNum, numSlices, config):
             "RVFWepi": RVFWepiContours,
             "RVsept": RVseptContours}
 
-def slice2Contours(inputsList, outputsList, config, sliceIndex, SA_LA):
+def slice2ContoursPt1(inputsList, outputsList, config, sliceIndex, SA_LA):
     # Check validity of SA_LA.
     SA_LA = SA_LA.lower()
     if not(SA_LA == "sa" or SA_LA == "la"):
@@ -173,18 +173,6 @@ def slice2Contours(inputsList, outputsList, config, sliceIndex, SA_LA):
 
         RVEndoIsEmptyAfterCleaning = (RVFW_CS is None or RVseptCS is None) or (RVFW_CS.size == 0 or RVseptCS.size == 0)
 
-        # If doing long axis, remove basal line segment in RVFW LA contour.
-        if SA_LA == "la" and not RVEndoIsEmptyAfterCleaning:
-            figI, axI = plt.subplots() # I for "inspection"
-            title = "Select points you would like to remove. Click and drag to lasso select.\n The zoom tool may also be helpful."
-            pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(RVendo), contours = RVFW_CS, color = "green", size = 20)
-
-            # Create a lasso selector. It automatically is able to be used after plt.show().
-            lassoSelector = SelectFromCollection(figI, axI, pts)
-
-            # Remove the points that were selected from the contour.
-            RVFW_CS = ut.deleteHelper(RVFW_CS, lassoSelector.ind, axis = 0)
-
         # Wrap up stuff we've computed so that it can be passed to slice2ContoursPt2() in the below.
         RVdata = (RVseptCS, RVFW_CS, RVseptContours, RVFWendoContours, RVFWepiContours)
         if SA_LA == "sa":
@@ -197,12 +185,24 @@ def slice2Contours(inputsList, outputsList, config, sliceIndex, SA_LA):
         else:  # SA_LA == "la"
             pt2Data = {"RVdata": RVdata, "geoData": geoData, "otherData": otherData}
 
+        # If doing long axis, remove basal line segment in RVFW LA contour.
         if SA_LA == "la" and not RVEndoIsEmptyAfterCleaning:
+            # Set up the scatter plot that will be passed to the lasso selector.
+            figI, axI = plt.subplots() # I for "inspection"
+            title = "Select points you would like to remove. Click and drag to lasso select.\n The zoom tool may also be helpful."
+            pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(RVendo), contours = RVFW_CS, color = "green", size = 20)
+
+            # Create the lasso selector.
+            lassoSelector = SelectFromCollection(figI, axI, pts)
+
             # Store the stuff we've computed as a member of the lassoSelector; the callback function
-            # lassoSelector.key_press() function will call slice2ContoursPt2() and make use of this data to finish up.
-            # To see how slice2ContoursPt() will be called, look in the "else" case below.
-            lassoSelector.RVdata = RVdata
+            # lassoSelector.key_press() will then call slice2ContoursPt2(self.pt2Data, self.sliceIndex).
+            lassoSelector.pt2Data = pt2Data
             lassoSelector.sliceIndex = sliceIndex
+
+            # This causes plot-with-interactive-lasso-selector to appear. When the user presses Enter,
+            # slice2ContoursPt2() is called by the callback function lassoSelector.keypress().
+            plt.show()
         else:
             slice2ContoursPt2(pt2Data, sliceIndex)
 

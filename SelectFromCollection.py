@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.path import Path
 from matplotlib.widgets import LassoSelector
+import masks2ContoursUtil as ut
 
 import masks2Contours
 
@@ -37,6 +38,8 @@ class SelectFromCollection(object):
         self.collection = collection
         self.alpha_other = alpha_other
         self.is_subtract = True
+        self.pt2Data = None
+        self.sliceIndex = -1
 
         self.pts = collection.get_offsets()
         self.Npts = len(self.pts)
@@ -89,7 +92,12 @@ class SelectFromCollection(object):
             self.ax.set_title("")
             self.fig.canvas.draw()
             plt.close("all")  # This closes all matplotlib windows and destroys their figure managers.
+
+            # Remove the points that were selected from the contour.
+            RVFW_CS = self.pt2Data["RVdata"][0]
+            RVFW_CS = ut.deleteHelper(RVFW_CS, self.ind, axis = 0)
             masks2Contours.slice2ContoursPt2(self.pt2Data, self.sliceIndex)
+
 
     def key_release(self, event):
         if event.key == "shift":
