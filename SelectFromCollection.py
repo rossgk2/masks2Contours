@@ -96,30 +96,10 @@ class SelectFromCollection(object):
             # Remove the points that were selected from the contour.
             RVFW_CS = self.pt2Data["RVdata"][0]
             RVFW_CS = ut.deleteHelper(RVFW_CS, self.ind, axis = 0)
-            masks2Contours.slice2ContoursPt2(self.pt2Data, self.sliceIndex)
 
+            # Finish up the masks2Contours process.
+            masks2Contours.slice2ContoursPt2(self.pt2Data, self.sliceIndex)
 
     def key_release(self, event):
         if event.key == "shift":
             self.is_subtract = True
-
-# An example on how to use the above class:
-
-if __name__ == '__main__':
-    # Select random grid points.
-    np.random.seed(19680801)
-    data = np.random.rand(100, 2)
-
-    # Useless second plot window.
-    f1 = plt.figure()
-    plt.scatter(data[:, 0], data[:, 1], s=80)
-
-    # Set up first plot window with lasso selector.
-    subplot_kw = dict(xlim=(0, 1), ylim=(0, 1), autoscale_on=False)
-    fig, ax = plt.subplots(subplot_kw=subplot_kw)
-    pts = ax.scatter(data[:, 0], data[:, 1], s=80)
-    selector = SelectFromCollection(fig, ax, pts)
-
-    plt.show()
-
-    print("Done")

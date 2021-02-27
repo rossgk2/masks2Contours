@@ -196,7 +196,7 @@ def slice2ContoursPt1(inputsList, outputsList, config, sliceIndex, SA_LA):
             lassoSelector = SelectFromCollection(figI, axI, pts)
 
             # Store the stuff we've computed as a member of the lassoSelector; the callback function
-            # lassoSelector.key_press() will then call slice2ContoursPt2(self.pt2Data, self.sliceIndex).
+            # lassoSelector.key_press() will call slice2ContoursPt2(self.pt2Data, self.sliceIndex).
             lassoSelector.pt2Data = pt2Data
             lassoSelector.sliceIndex = sliceIndex
 
