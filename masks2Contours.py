@@ -32,8 +32,7 @@ def masks2ContoursSA(segName, frameNum, config):
     for i in range(0, numSlices):
         inputsList = (LVendo[:, :, i], LVepi[:, :, i], RVendo[:, :, i], transform, pixSpacing) #Note the last 3 args are the same every iteration.
         outputsList = (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours, RVinserts)
-        figaxs = None
-        slice2Contours(inputsList, outputsList, config, figaxs, i, "SA")
+        slice2Contours(inputsList, outputsList, config, i, "SA")
 
     # Now, calculate weights for RV insertion points.
 
@@ -91,8 +90,7 @@ def masks2ContoursLA(LA_segs, frameNum, numSlices, config):
     for i in range(0, numSlices):
         inputsList = (LVendoList[i], LVepiList[i], RVendoList[i], transformList[i], pixSpacingList[i])
         outputsList = (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours)
-        figaxs = None
-        slice2Contours(inputsList, outputsList, config, figaxs, i, "LA")
+        slice2Contours(inputsList, outputsList, config, i, "LA")
 
     # Return a dictionary.
     return {"LVendo": LVendoContours,
@@ -101,7 +99,7 @@ def masks2ContoursLA(LA_segs, frameNum, numSlices, config):
             "RVFWepi": RVFWepiContours,
             "RVsept": RVseptContours}
 
-def slice2Contours(inputsList, outputsList, config, figaxs, sliceIndex, SA_LA):
+def slice2Contours(inputsList, outputsList, config, sliceIndex, SA_LA):
     # Check validity of SA_LA.
     SA_LA = SA_LA.lower()
     if not(SA_LA == "sa" or SA_LA == "la"):
