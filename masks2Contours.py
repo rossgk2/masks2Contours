@@ -187,20 +187,34 @@ def slice2Contours(inputsList, outputsList, config, sliceIndex, SA_LA):
             RVFW_CS = ut.deleteHelper(RVFW_CS, lassoSelector.ind, axis = 0)
 
             # After the user has pressed "Enter", control will be returned to this point.
+        else:
+            # Wrap up stuff we've computed and pass it to slice2ContoursPt2().
+            RVdata = (RVseptCS, RVFW_CS, RVseptContours, tmpRV_insertIndices, RVinserts, RVFWendoContours, RVFWepiContours)
+            geoData = (transform, pixSpacing)
+            otherData = (config, SA_LA)
+            pt2Data = {"RVdata" : RVdata, "geoData" : geoData, "otherData" : otherData}
+            slice2ContoursPt2(pt2Data, sliceIndex)
 
-        contoursToImageCoords(RVseptCS, transform, sliceIndex, RVseptContours, SA_LA)
-        contoursToImageCoords(RVFW_CS, transform, sliceIndex, RVFWendoContours, SA_LA)
+def slice2ContoursPt2(pt2Data, sliceIndex):
+    # Unpack input.
+    (RVseptCS, RVFW_CS, RVseptContours, tmpRV_insertIndices, RVinserts, RVFWendoContours, RVFWepiContours) = pt2Data["RVdata"]
+    (transform, pixSpacing) = pt2Data["geoData"]
+    (config, SA_LA) = pt2Data["otherData"]
 
-        # If doing short axis, save RV insert coordinates.
-        if SA_LA == "sa" and (tmpRV_insertIndices is not None and tmpRV_insertIndices.size != 0):
-            RVinserts[:, :, sliceIndex] = RVFWendoContours[tmpRV_insertIndices[0:1 + 1], :, sliceIndex]
+    # Write to RVseptContours and RVFWendoContours.
+    contoursToImageCoords(RVseptCS, transform, sliceIndex, RVseptContours, SA_LA)
+    contoursToImageCoords(RVFW_CS, transform, sliceIndex, RVFWendoContours, SA_LA)
 
-        # Calculate RV epicardial wall by applying a thickness to RV endocardium.
-        if SA_LA == "sa":
-            RVEndoNormals = ut.lineNormals2D(RVFW_CS)
-            RVepiSC = RVFW_CS - np.ceil(config.rvWallThickness / pixSpacing) * RVEndoNormals \
-                if RVFW_CS.size != 0 and RVEndoNormals.size != 0 else np.array([])
-            contoursToImageCoords(RVepiSC, transform, sliceIndex, RVFWepiContours, "SA")
+    # If doing short axis, save RV insert coordinates.
+    if SA_LA == "sa" and (tmpRV_insertIndices is not None and tmpRV_insertIndices.size != 0):
+        RVinserts[:, :, sliceIndex] = RVFWendoContours[tmpRV_insertIndices[0:1 + 1], :, sliceIndex]
+
+    # Calculate RV epicardial wall by applying a thickness to RV endocardium.
+    if SA_LA == "sa":
+        RVEndoNormals = ut.lineNormals2D(RVFW_CS)
+        RVepiSC = RVFW_CS - np.ceil(config.rvWallThickness / pixSpacing) * RVEndoNormals \
+            if RVFW_CS.size != 0 and RVEndoNormals.size != 0 else np.array([])
+        contoursToImageCoords(RVepiSC, transform, sliceIndex, RVFWepiContours, "SA")
 
 # Helper function for converting contours to an image coordinate system. This function writes to "contours".
 def contoursToImageCoords(maskSlice, transform, sliceIndex, contours, SA_LA):
