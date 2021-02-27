@@ -15,7 +15,7 @@ class Config(NamedTuple):
     downsample: int
     upperBdNumContourPts: int  # An upper bound on the number of contour points.
 
-def main():
+def main(MPL_objs):
     # For debugging: don't use scientific notation when printing out ndarrays.
     np.set_printoptions(suppress = True)
 
@@ -25,7 +25,6 @@ def main():
 
     # Get filepaths ready.
     fldr = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\"
-    resultsDir = fldr + "out\\"
 
     # These are filepaths for the SA.
     imgName = fldr + "CINE_SAX.nii"
@@ -41,7 +40,7 @@ def main():
     # SAcontours and LAcontours are dicts whose keys are strings such as "LVendo" or "RVsept" and whose values are
     # m x 2 ndarrays containing the contour points. SAinserts is a dict with the two keys "RVinserts" and "RVInsertsWeights".
     (SAcontours, SAinserts) = masks2ContoursSA(segName, frameNum, config)
-    LAcontours = masks2ContoursLA(LA_segs, frameNum, numSlices = len(LA_names), config = config)
+    LAcontours = masks2ContoursLA(LA_segs, frameNum, numSlices = len(LA_names), config = config, MPL_objs = MPL_objs)
 
     # Get valve points.
     valves = getValvePoints(frameNum, fldr, imgName)
@@ -242,4 +241,10 @@ def prepareContour(mask, sliceIndex):
     result = np.squeeze(mask[:, :, sliceIndex])
     return ut.removeZerorows(result)
 
-main()
+# Temporary stuff
+class test():
+    pass
+t = test()
+t.testField = "test"
+
+main(t)

@@ -32,7 +32,7 @@ def masks2ContoursSA(segName, frameNum, config):
     for i in range(0, numSlices):
         inputsList = (LVendo[:, :, i], LVepi[:, :, i], RVendo[:, :, i], transform, pixSpacing) #Note the last 3 args are the same every iteration.
         outputsList = (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours, RVinserts)
-        slice2ContoursPt1(inputsList, outputsList, config, i, "SA")
+        slice2ContoursPt1(inputsList, outputsList, config, i, "SA", MPL_objs = None)
 
     # Now, calculate weights for RV insertion points.
 
@@ -66,7 +66,7 @@ def masks2ContoursSA(segName, frameNum, config):
             "RVsept" : RVseptContours } ,
             {"RVinserts" : RVinserts, "RVinsertsWeights" : RVinsertsWeights})
 
-def masks2ContoursLA(LA_segs, frameNum, numSlices, config):
+def masks2ContoursLA(LA_segs, frameNum, numSlices, config, MPL_objs):
     # Precompute (more accurately, "pre-read") endoLV, epiLV, endoRV for each slice.
     # Also precompute transform and pix_spacing for each slice.
     (LVendoList, LVepiList, RVendoList, transformList, pixSpacingList) = ([], [], [], [], [])
@@ -90,7 +90,7 @@ def masks2ContoursLA(LA_segs, frameNum, numSlices, config):
     for i in range(0, numSlices):
         inputsList = (LVendoList[i], LVepiList[i], RVendoList[i], transformList[i], pixSpacingList[i])
         outputsList = (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours)
-        slice2ContoursPt1(inputsList, outputsList, config, i, "LA")
+        slice2ContoursPt1(inputsList, outputsList, config, i, "LA", MPL_objs)
 
     # Return a dictionary.
     return {"LVendo": LVendoContours,
@@ -99,7 +99,7 @@ def masks2ContoursLA(LA_segs, frameNum, numSlices, config):
             "RVFWepi": RVFWepiContours,
             "RVsept": RVseptContours}
 
-def slice2ContoursPt1(inputsList, outputsList, config, sliceIndex, SA_LA):
+def slice2ContoursPt1(inputsList, outputsList, config, sliceIndex, SA_LA, MPL_objs):
     # Check validity of SA_LA.
     SA_LA = SA_LA.lower()
     if not(SA_LA == "sa" or SA_LA == "la"):
@@ -203,6 +203,7 @@ def slice2ContoursPt1(inputsList, outputsList, config, sliceIndex, SA_LA):
             # This causes plot-with-interactive-lasso-selector to appear. When the user presses Enter,
             # slice2ContoursPt2() is called by the callback function lassoSelector.keypress().
             plt.show()
+            print(MPL_objs.testField)
         else:
             slice2ContoursPt2(pt2Data, sliceIndex)
 
