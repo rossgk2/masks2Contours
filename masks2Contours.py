@@ -1,4 +1,6 @@
-import alphashape
+import sys
+sys.path.append("masks2ContoursScripts")
+
 import matplotlib.pyplot as plt
 import nibabel as nib
 import numpy as np
@@ -202,8 +204,10 @@ def slice2ContoursPt1(inputsList, outputsList, config, sliceIndex, SA_LA, MPL_ob
 
             # This causes plot-with-interactive-lasso-selector to appear. When the user presses Enter,
             # slice2ContoursPt2() is called by the callback function lassoSelector.keypress().
-            plt.show()
-            print(MPL_objs.testField)
+            (mgr, widg) = MPL_objs
+            widg.lasso = lassoSelector # Prevents lassoSelector from getting garbage collected
+            mgr.win.createDock("MPL Widget", widg)
+            lassoSelector.parent_widg = mgr.win.dockWidgets[-1].parent() # dock widget contains `widg`, parent of that is dock itself
         else:
             slice2ContoursPt2(pt2Data, sliceIndex)
 

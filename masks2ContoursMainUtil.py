@@ -1,3 +1,6 @@
+import sys
+sys.path.append("masks2ContoursScripts")
+
 import numpy as np
 import masks2ContoursUtil as ut
 from glob import glob

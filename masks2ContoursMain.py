@@ -1,3 +1,6 @@
+import sys
+sys.path.append("masks2ContoursScripts")
+
 import csv
 from glob import glob
 from typing import NamedTuple
@@ -240,11 +243,3 @@ def writeResults(frameNum, includedSlices, SAContours, SAinserts, LAContours, va
 def prepareContour(mask, sliceIndex):
     result = np.squeeze(mask[:, :, sliceIndex])
     return ut.removeZerorows(result)
-
-# Temporary stuff
-class test():
-    pass
-t = test()
-t.testField = "test"
-
-main(t)
