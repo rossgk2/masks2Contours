@@ -97,7 +97,7 @@ def getSAsliceIndices(SAContours):
 
 def plotResults(includedSlices, SAContours, SAinserts, LAContours, valves, apex):
     # Unwrap valve points.
-    (mv, av, tv, pv) = valves
+    (mv, tv, av, pv) = valves
 
     # Plot short axis contours.
     fig, ax = plt.subplots(1, 1, subplot_kw = {"projection": "3d"})
@@ -148,7 +148,7 @@ def plotResults(includedSlices, SAContours, SAinserts, LAContours, valves, apex)
 
 def writeResults(frameNum, includedSlices, SAContours, SAinserts, LAContours, valves, apex, fldr):
     # Unwrap valve points.
-    (mv, av, tv, pv) = valves
+    (mv, tv, av, pv) = valves
 
     # Set up file writers.
     try:
