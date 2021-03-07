@@ -94,11 +94,11 @@ class SelectFromCollection(object):
             plt.close("all")  # This closes all matplotlib windows and destroys their figure managers.
 
             # Remove the points that were selected from the contour.
-            RVFW_CS = self.pt2Data["RVdata"][0]
+            RVFW_CS = self.pt2Data.RVFW_CS
             RVFW_CS = ut.deleteHelper(RVFW_CS, self.ind, axis = 0)
 
             # Finish up the masks2Contours process.
-            masks2Contours.slice2ContoursPt2(self.pt2Data, self.sliceIndex)
+            masks2Contours.slice2ContoursPt2(pt2Data = self.pt2Data, sliceIndex = self.sliceIndex)
 
     def key_release(self, event):
         if event.key == "shift":

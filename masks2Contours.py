@@ -1,4 +1,7 @@
 import sys
+from types import SimpleNamespace
+from typing import NamedTuple
+
 sys.path.append("masks2ContoursScripts")
 
 import matplotlib.pyplot as plt
@@ -32,9 +35,13 @@ def masks2ContoursSA(segName, frameNum, config):
 
     # Loop over slices and get contours one slice at a time.
     for i in range(0, numSlices):
-        inputsList = (LVendo[:, :, i], LVepi[:, :, i], RVendo[:, :, i], transform, pixSpacing) #Note the last 3 args are the same every iteration.
-        outputsList = (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours, RVinserts)
-        slice2ContoursPt1(inputsList, outputsList, config, i, "SA", PyQt_objs = None)
+        inputsHolder = SimpleNamespace(LVendo = LVendo[:, :, i], LVepi = LVepi[:, :, i], RVendo = RVendo[:, :, i],
+                            transform = transform, pixSpacing = pixSpacing) #Note the last 3 args are the same every iteration.
+        outputsHolder = SimpleNamespace(LVendoContours = LVendoContours, LVepiContours = LVepiContours,
+                             RVseptContours = RVseptContours, RVFWendoContours = RVFWendoContours,
+                             RVFWepiContours = RVFWepiContours, RVinserts = RVinserts)
+        slice2ContoursPt1(inputsHolder = inputsHolder, outputsHolder = outputsHolder, config = config,
+                          sliceIndex = i, SA_LA = "SA", PyQt_objs = None)
 
     # Now, calculate weights for RV insertion points.
 
@@ -90,9 +97,13 @@ def masks2ContoursLA(LA_segs, frameNum, numSlices, config, PyQt_objs):
 
     # Loop over slices and get contours one slice at a time.
     for i in range(0, numSlices):
-        inputsList = (LVendoList[i], LVepiList[i], RVendoList[i], transformList[i], pixSpacingList[i])
-        outputsList = (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours)
-        slice2ContoursPt1(inputsList, outputsList, config, i, "LA", PyQt_objs)
+        inputsHolder = SimpleNamespace(LVendo = LVendoList[i], LVepi = LVepiList[i], RVendo = RVendoList[i],
+                              transform = transformList[i], pixSpacing = pixSpacingList[i])
+        outputsHolder = SimpleNamespace(LVendoContours = LVendoContours, LVepiContours = LVepiContours,
+                               RVseptContours = RVseptContours, RVFWendoContours = RVFWendoContours,
+                               RVFWepiContours = RVFWepiContours)
+        slice2ContoursPt1(inputsHolder = inputsHolder, outputsHolder = outputsHolder, config = config,
+                          sliceIndex = i, SA_LA = "LA", PyQt_objs = PyQt_objs)
 
     # Return a dictionary.
     return {"LVendo": LVendoContours,
@@ -101,26 +112,17 @@ def masks2ContoursLA(LA_segs, frameNum, numSlices, config, PyQt_objs):
             "RVFWepi": RVFWepiContours,
             "RVsept": RVseptContours}
 
-def slice2ContoursPt1(inputsList, outputsList, config, sliceIndex, SA_LA, PyQt_objs):
+def slice2ContoursPt1(inputsHolder, outputsHolder, config, sliceIndex, SA_LA, PyQt_objs):
     # Check validity of SA_LA.
     SA_LA = SA_LA.lower()
     if not(SA_LA == "sa" or SA_LA == "la"):
         raise ValueError("SA_LA must either be \"SA\" or \"LA\".")
 
-    # Unpack tuples passed in as input.
-    (LVendo, LVepi, RVendo, transform, pixSpacing) = inputsList
-
-    # Still unpacking stuff...
-    if SA_LA == "sa":
-        (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours, RVinserts) = outputsList
-    else: # SA_LA == "la"
-        (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours) = outputsList
-
     # Get contours for each slice in the different regions of the heart. In the following variable names,
     # "CS" stands for "contour slice".
-    LVendoCS = getContoursFromMask(LVendo, irregMaxSize = 20)
-    LVepiCS = getContoursFromMask(LVepi, irregMaxSize = 20)
-    RVendoCS = getContoursFromMask(RVendo, irregMaxSize = 20)
+    LVendoCS = getContoursFromMask(inputsHolder.LVendo, irregMaxSize = 20)
+    LVepiCS = getContoursFromMask(inputsHolder.LVepi, irregMaxSize = 20)
+    RVendoCS = getContoursFromMask(inputsHolder.RVendo, irregMaxSize = 20)
 
     # Load MATLAB variables if config indicates that we should do so.
     LVendoIsEmpty = LVendoCS is None or np.max(LVendoCS.shape) <= 2
@@ -157,12 +159,15 @@ def slice2ContoursPt1(inputsList, outputsList, config, sliceIndex, SA_LA, PyQt_o
     # LV endo
     if not LVendoIsEmpty:
         LVendoCS = cleanContours(LVendoCS, config.downsample)
-        contoursToImageCoords(LVendoCS, transform, sliceIndex, LVendoContours, SA_LA)  # This call writes to "endoLVContours".
 
+        # This call writes to "endoLVContours".
+        contoursToImageCoords(LVendoCS, inputsHolder.transform, sliceIndex, outputsHolder.LVendoContours, SA_LA)
     # LV epi
     if not LVepiIsEmpty:
         LVepiCS = cleanContours(LVepiCS, config.downsample)
-        contoursToImageCoords(LVepiCS, transform, sliceIndex, LVepiContours, SA_LA)  # This call writes to "epiLVContours".
+
+        # This call writes to "epiLVContours".
+        contoursToImageCoords(LVepiCS, inputsHolder.transform, sliceIndex, outputsHolder.LVepiContours, SA_LA)
 
     # RV
     if not RVendoIsEmpty:
@@ -176,17 +181,17 @@ def slice2ContoursPt1(inputsList, outputsList, config, sliceIndex, SA_LA, PyQt_o
         RVEndoIsEmptyAfterCleaning = (RVFW_CS is None or RVseptCS is None) or (RVFW_CS.size == 0 or RVseptCS.size == 0)
 
         # Wrap up stuff we've computed so that it can be passed to slice2ContoursPt2() in the below.
-        pt2Data = {"inputsList": inputsList, "outputsList": outputsList,
-                   "RV_CSdata" : (RVseptCS, RVFW_CS), "otherData": (config, SA_LA)}
+        pt2Data = SimpleNamespace(inputsHolder = inputsHolder, outputsHolder = outputsHolder, RVseptCS = RVseptCS,
+                         RVFW_CS = RVFW_CS, config = config, SA_LA = SA_LA)
         if SA_LA == "sa":
-            pt2Data["SAonly"] = (tmpRV_insertIndices, RVinserts)
+            pt2Data.tmpRV_insertIndices = tmpRV_insertIndices
 
         # If doing long axis, remove basal line segment in RVFW LA contour.
         if SA_LA == "la" and not RVEndoIsEmptyAfterCleaning:
             # Set up the scatter plot that will be passed to the lasso selector.
             figI, axI = plt.subplots() # I for "inspection"
             title = "Select points you would like to remove. Click and drag to lasso select.\n The zoom tool may also be helpful."
-            pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(RVendo), contours = RVFW_CS, color = "green", size = 20)
+            pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(inputsHolder.RVendo), contours = RVFW_CS, color = "green", size = 20)
 
             # Create the lasso selector.
             lassoSelector = SelectFromCollection(figI, axI, pts)
@@ -202,19 +207,24 @@ def slice2ContoursPt1(inputsList, outputsList, config, sliceIndex, SA_LA, PyQt_o
             # widg.lasso = lassoSelector # Prevents lassoSelector from getting garbage collected
             # mgr.win.createDock("MPL Widget", widg)
             # lassoSelector.parent_widg = mgr.win.dockWidgets[-1].parent() # dock widget contains `widg`, parent of that is dock itself
+            plt.show()
         else:
-            slice2ContoursPt2(pt2Data, sliceIndex)
+            slice2ContoursPt2(pt2Data = pt2Data, sliceIndex = sliceIndex)
 
 def slice2ContoursPt2(pt2Data, sliceIndex):
-    # Unpack input.
-    (LVendo, LVepi, RVendo, transform, pixSpacing) = pt2Data["inputsList"]
-    (RVseptCS, RVFW_CS) = pt2Data["RV_CSdata"]
-    (config, SA_LA) = pt2Data["otherData"]
+    # Unpack pt2Data.
+    transform = pt2Data.inputsHolder.transform
+    RVseptContours = pt2Data.outputsHolder.RVseptContours
+    RVFWendoContours = pt2Data.outputsHolder.RVseptContours
+    RVFWepiContours = pt2Data.outputsHolder.RVFWepiContours
+    RVseptCS = pt2Data.RVseptCS
+    RVFW_CS = pt2Data.RVFW_CS
+    config = pt2Data.config
+
+    SA_LA = pt2Data.SA_LA
     if SA_LA == "sa":
-        (tmpRV_insertIndices, RVinserts) = pt2Data["SAonly"]
-        (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours, RVinserts) = pt2Data["outputsList"]
-    else: # SA_LA == "la"
-        (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours) = pt2Data["outputsList"]
+        tmpRV_insertIndices = pt2Data.tmpRV_insertIndices
+        RVinserts = pt2Data.outputsHolder.RVinserts
 
     # Write to RVseptContours and RVFWendoContours.
     contoursToImageCoords(RVseptCS, transform, sliceIndex, RVseptContours, SA_LA)
@@ -227,7 +237,7 @@ def slice2ContoursPt2(pt2Data, sliceIndex):
     # Calculate RV epicardial wall by applying a thickness to RV endocardium.
     if SA_LA == "sa":
         RVEndoNormals = ut.lineNormals2D(RVFW_CS)
-        RVepiSC = RVFW_CS - np.ceil(config.rvWallThickness / pixSpacing) * RVEndoNormals \
+        RVepiSC = RVFW_CS - np.ceil(config.rvWallThickness / pt2Data.inputsHolder.pixSpacing) * RVEndoNormals \
             if RVFW_CS.size != 0 and RVEndoNormals.size != 0 else np.array([])
         contoursToImageCoords(RVepiSC, transform, sliceIndex, RVFWepiContours, "SA")
 
