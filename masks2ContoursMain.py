@@ -18,7 +18,7 @@ class Config(NamedTuple):
     downsample: int
     upperBdNumContourPts: int  # An upper bound on the number of contour points.
 
-def main(MPL_objs):
+def main(PyQt_objs):
     # For debugging: don't use scientific notation when printing out ndarrays.
     np.set_printoptions(suppress = True)
 
@@ -43,7 +43,7 @@ def main(MPL_objs):
     # SAcontours and LAcontours are dicts whose keys are strings such as "LVendo" or "RVsept" and whose values are
     # m x 2 ndarrays containing the contour points. SAinserts is a dict with the two keys "RVinserts" and "RVInsertsWeights".
     (SAcontours, SAinserts) = masks2ContoursSA(segName, frameNum, config)
-    LAcontours = masks2ContoursLA(LA_segs, frameNum, numSlices = len(LA_names), config = config, MPL_objs = MPL_objs)
+    LAcontours = masks2ContoursLA(LA_segs, frameNum, numSlices = len(LA_names), config = config, PyQt_objs = PyQt_objs)
 
     # Get valve points.
     valves = getValvePoints(frameNum, fldr, imgName)
@@ -243,3 +243,9 @@ def writeResults(frameNum, includedSlices, SAContours, SAinserts, LAContours, va
 def prepareContour(mask, sliceIndex):
     result = np.squeeze(mask[:, :, sliceIndex])
     return ut.removeZerorows(result)
+
+class test:
+    pass
+
+t = test()
+main(t)

@@ -34,7 +34,7 @@ def masks2ContoursSA(segName, frameNum, config):
     for i in range(0, numSlices):
         inputsList = (LVendo[:, :, i], LVepi[:, :, i], RVendo[:, :, i], transform, pixSpacing) #Note the last 3 args are the same every iteration.
         outputsList = (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours, RVinserts)
-        slice2ContoursPt1(inputsList, outputsList, config, i, "SA", MPL_objs = None)
+        slice2ContoursPt1(inputsList, outputsList, config, i, "SA", PyQt_objs = None)
 
     # Now, calculate weights for RV insertion points.
 
@@ -68,7 +68,7 @@ def masks2ContoursSA(segName, frameNum, config):
             "RVsept" : RVseptContours } ,
             {"RVinserts" : RVinserts, "RVinsertsWeights" : RVinsertsWeights})
 
-def masks2ContoursLA(LA_segs, frameNum, numSlices, config, MPL_objs):
+def masks2ContoursLA(LA_segs, frameNum, numSlices, config, PyQt_objs):
     # Precompute (more accurately, "pre-read") endoLV, epiLV, endoRV for each slice.
     # Also precompute transform and pix_spacing for each slice.
     (LVendoList, LVepiList, RVendoList, transformList, pixSpacingList) = ([], [], [], [], [])
@@ -92,7 +92,7 @@ def masks2ContoursLA(LA_segs, frameNum, numSlices, config, MPL_objs):
     for i in range(0, numSlices):
         inputsList = (LVendoList[i], LVepiList[i], RVendoList[i], transformList[i], pixSpacingList[i])
         outputsList = (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours)
-        slice2ContoursPt1(inputsList, outputsList, config, i, "LA", MPL_objs)
+        slice2ContoursPt1(inputsList, outputsList, config, i, "LA", PyQt_objs)
 
     # Return a dictionary.
     return {"LVendo": LVendoContours,
@@ -101,7 +101,7 @@ def masks2ContoursLA(LA_segs, frameNum, numSlices, config, MPL_objs):
             "RVFWepi": RVFWepiContours,
             "RVsept": RVseptContours}
 
-def slice2ContoursPt1(inputsList, outputsList, config, sliceIndex, SA_LA, MPL_objs):
+def slice2ContoursPt1(inputsList, outputsList, config, sliceIndex, SA_LA, PyQt_objs):
     # Check validity of SA_LA.
     SA_LA = SA_LA.lower()
     if not(SA_LA == "sa" or SA_LA == "la"):
@@ -176,16 +176,10 @@ def slice2ContoursPt1(inputsList, outputsList, config, sliceIndex, SA_LA, MPL_ob
         RVEndoIsEmptyAfterCleaning = (RVFW_CS is None or RVseptCS is None) or (RVFW_CS.size == 0 or RVseptCS.size == 0)
 
         # Wrap up stuff we've computed so that it can be passed to slice2ContoursPt2() in the below.
-        RVdata = (RVseptCS, RVFW_CS, RVseptContours, RVFWendoContours, RVFWepiContours)
+        pt2Data = {"inputsList": inputsList, "outputsList": outputsList,
+                   "RV_CSdata" : (RVseptCS, RVFW_CS), "otherData": (config, SA_LA)}
         if SA_LA == "sa":
-            RVdata_SAonly = (tmpRV_insertIndices, RVinserts)
-        geoData = (transform, pixSpacing)
-        otherData = (config, SA_LA)
-
-        if SA_LA == "sa":
-            pt2Data = {"RVdata": RVdata, "RVdata_SAonly": RVdata_SAonly, "geoData": geoData, "otherData": otherData}
-        else:  # SA_LA == "la"
-            pt2Data = {"RVdata": RVdata, "geoData": geoData, "otherData": otherData}
+            pt2Data["SAonly"] = (tmpRV_insertIndices, RVinserts)
 
         # If doing long axis, remove basal line segment in RVFW LA contour.
         if SA_LA == "la" and not RVEndoIsEmptyAfterCleaning:
@@ -204,20 +198,23 @@ def slice2ContoursPt1(inputsList, outputsList, config, sliceIndex, SA_LA, MPL_ob
 
             # This causes plot-with-interactive-lasso-selector to appear. When the user presses Enter,
             # slice2ContoursPt2() is called by the callback function lassoSelector.keypress().
-            (mgr, widg) = MPL_objs
-            widg.lasso = lassoSelector # Prevents lassoSelector from getting garbage collected
-            mgr.win.createDock("MPL Widget", widg)
-            lassoSelector.parent_widg = mgr.win.dockWidgets[-1].parent() # dock widget contains `widg`, parent of that is dock itself
+            # (mgr, widg) = PyQt_objs
+            # widg.lasso = lassoSelector # Prevents lassoSelector from getting garbage collected
+            # mgr.win.createDock("MPL Widget", widg)
+            # lassoSelector.parent_widg = mgr.win.dockWidgets[-1].parent() # dock widget contains `widg`, parent of that is dock itself
         else:
             slice2ContoursPt2(pt2Data, sliceIndex)
 
 def slice2ContoursPt2(pt2Data, sliceIndex):
     # Unpack input.
-    (RVseptCS, RVFW_CS, RVseptContours, RVFWendoContours, RVFWepiContours) = pt2Data["RVdata"]
-    (transform, pixSpacing) = pt2Data["geoData"]
+    (LVendo, LVepi, RVendo, transform, pixSpacing) = pt2Data["inputsList"]
+    (RVseptCS, RVFW_CS) = pt2Data["RV_CSdata"]
     (config, SA_LA) = pt2Data["otherData"]
     if SA_LA == "sa":
-        (tmpRV_insertIndices, RVinserts) = pt2Data["RVdata_SAonly"]
+        (tmpRV_insertIndices, RVinserts) = pt2Data["SAonly"]
+        (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours, RVinserts) = pt2Data["outputsList"]
+    else: # SA_LA == "la"
+        (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours) = pt2Data["outputsList"]
 
     # Write to RVseptContours and RVFWendoContours.
     contoursToImageCoords(RVseptCS, transform, sliceIndex, RVseptContours, SA_LA)
