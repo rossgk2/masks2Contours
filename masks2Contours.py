@@ -34,7 +34,7 @@ def masks2ContoursSA(segName, frameNum, config):
     for i in range(0, numSlices):
         inputsList = (LVendo[:, :, i], LVepi[:, :, i], RVendo[:, :, i], transform, pixSpacing) #Note the last 3 args are the same every iteration.
         outputsList = (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours, RVinserts)
-        slice2ContoursPt1(inputsList, outputsList, config, i, "SA", MPL_objs = None)
+        slice2ContoursPt1(inputsList, outputsList, config, i, "SA", PyQt_objs = None)
 
     # Now, calculate weights for RV insertion points.
 
@@ -68,7 +68,8 @@ def masks2ContoursSA(segName, frameNum, config):
             "RVsept" : RVseptContours } ,
             {"RVinserts" : RVinserts, "RVinsertsWeights" : RVinsertsWeights})
 
-def masks2ContoursLA(LA_segs, frameNum, numSlices, config, MPL_objs):
+def masks2ContoursLA(LA_segs, frameNum, numSlices, config, PyQt_objs):
+    print("masks2ContoursLA() called")
     # Precompute (more accurately, "pre-read") endoLV, epiLV, endoRV for each slice.
     # Also precompute transform and pix_spacing for each slice.
     (LVendoList, LVepiList, RVendoList, transformList, pixSpacingList) = ([], [], [], [], [])
@@ -88,11 +89,14 @@ def masks2ContoursLA(LA_segs, frameNum, numSlices, config, MPL_objs):
     RVFWepiContours = np.zeros([ub, 3, numSlices])
     RVseptContours = np.zeros([ub, 3, numSlices])
 
+
+    print("Right before loop over slices")
     # Loop over slices and get contours one slice at a time.
     for i in range(0, numSlices):
+        print(f"Slice {i}")
         inputsList = (LVendoList[i], LVepiList[i], RVendoList[i], transformList[i], pixSpacingList[i])
         outputsList = (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours)
-        slice2ContoursPt1(inputsList, outputsList, config, i, "LA", MPL_objs)
+        slice2ContoursPt1(inputsList, outputsList, config, i, "LA", PyQt_objs)
 
     # Return a dictionary.
     return {"LVendo": LVendoContours,
@@ -101,7 +105,7 @@ def masks2ContoursLA(LA_segs, frameNum, numSlices, config, MPL_objs):
             "RVFWepi": RVFWepiContours,
             "RVsept": RVseptContours}
 
-def slice2ContoursPt1(inputsList, outputsList, config, sliceIndex, SA_LA, MPL_objs):
+def slice2ContoursPt1(inputsList, outputsList, config, sliceIndex, SA_LA, PyQt_objs):
     # Check validity of SA_LA.
     SA_LA = SA_LA.lower()
     if not(SA_LA == "sa" or SA_LA == "la"):
@@ -115,6 +119,7 @@ def slice2ContoursPt1(inputsList, outputsList, config, sliceIndex, SA_LA, MPL_ob
         (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours, RVinserts) = outputsList
     else: # SA_LA == "la"
         (LVendoContours, LVepiContours, RVseptContours, RVFWendoContours, RVFWepiContours) = outputsList
+        print("slice2ContoursPt1() called for LA") 
 
     # Get contours for each slice in the different regions of the heart. In the following variable names,
     # "CS" stands for "contour slice".
@@ -189,29 +194,34 @@ def slice2ContoursPt1(inputsList, outputsList, config, sliceIndex, SA_LA, MPL_ob
 
         # If doing long axis, remove basal line segment in RVFW LA contour.
         if SA_LA == "la" and not RVEndoIsEmptyAfterCleaning:
+            print("Right before lasso stuff, inside if statement")
+            (mgr, widg) = PyQt_objs
+
             # Set up the scatter plot that will be passed to the lasso selector.
-            figI, axI = plt.subplots() # I for "inspection"
             title = "Select points you would like to remove. Click and drag to lasso select.\n The zoom tool may also be helpful."
-            pts = subplotHelper(axI, title = title, maskSlice = np.squeeze(RVendo), contours = RVFW_CS, color = "green", size = 20)
+            pts = subplotHelper(widg.axes, title = title, maskSlice = np.squeeze(RVendo), contours = RVFW_CS, color = "green", size = 20)
 
             # Create the lasso selector.
-            lassoSelector = SelectFromCollection(figI, axI, pts)
+            lassoSelector = SelectFromCollection(widg.axes, pts)
 
             # Store the stuff we've computed as a member of the lassoSelector; the callback function
             # lassoSelector.key_press() will call slice2ContoursPt2(self.pt2Data, self.sliceIndex).
             lassoSelector.pt2Data = pt2Data
             lassoSelector.sliceIndex = sliceIndex
 
+            print("Lasso selector has been created. About to hook it up to PyQt.")
             # This causes plot-with-interactive-lasso-selector to appear. When the user presses Enter,
             # slice2ContoursPt2() is called by the callback function lassoSelector.keypress().
-            (mgr, widg) = MPL_objs
+            print("PyQt_objs: " + str(PyQt_objs))
             widg.lasso = lassoSelector # Prevents lassoSelector from getting garbage collected
             mgr.win.createDock("MPL Widget", widg)
             lassoSelector.parent_widg = mgr.win.dockWidgets[-1].parent() # dock widget contains `widg`, parent of that is dock itself
+            print("Hookup complete.")
         else:
             slice2ContoursPt2(pt2Data, sliceIndex)
 
 def slice2ContoursPt2(pt2Data, sliceIndex):
+    print("s2cPt2()")
     # Unpack input.
     (RVseptCS, RVFW_CS, RVseptContours, RVFWendoContours, RVFWepiContours) = pt2Data["RVdata"]
     (transform, pixSpacing) = pt2Data["geoData"]

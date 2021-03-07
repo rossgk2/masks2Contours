@@ -31,10 +31,11 @@ class SelectFromCollection(object):
         alpha value of 1 and non-selected points to `alpha_other`.
     """
 
-    def __init__(self, fig, ax, collection, alpha_other=0.3):
-        self.fig = fig
+    def __init__(self, ax, collection, alpha_other=0.3):
+        print("Lasso selector is being created.") 
         self.ax = ax
-        self.canvas = ax.figure.canvas
+        self.fig = ax.figure
+        self.canvas = self.fig.canvas
         self.collection = collection
         self.alpha_other = alpha_other
         self.is_subtract = True
@@ -59,8 +60,8 @@ class SelectFromCollection(object):
         self.ind = []
 
         # Register the callback functions.
-        fig.canvas.mpl_connect("key_press_event", self.key_press)
-        fig.canvas.mpl_connect("key_release_event", self.key_release)
+        self.canvas.mpl_connect("key_press_event", self.key_press)
+        self.canvas.mpl_connect("key_release_event", self.key_release)
         ax.set_title("Press enter to accept selected points.")
 
     def onselect(self, verts):
@@ -83,6 +84,7 @@ class SelectFromCollection(object):
         self.canvas.draw_idle()
 
     def key_press(self, event):
+        print("key_press() called.")
         if event.key == "shift":
             self.is_subtract = False
         elif event.key == "enter":
@@ -90,14 +92,13 @@ class SelectFromCollection(object):
             print(self.pts[self.ind])
             self.disconnect()
             self.ax.set_title("")
-            self.fig.canvas.draw()
-            plt.close("all")  # This closes all matplotlib windows and destroys their figure managers.
+            self.canvas.draw()
 
             # Remove the points that were selected from the contour.
             RVFW_CS = self.pt2Data["RVdata"][0]
             RVFW_CS = ut.deleteHelper(RVFW_CS, self.ind, axis = 0)
 
-            # Finish up the masks2Contours process.
+            # Finish up the slice2Contours process for the current slice.
             masks2Contours.slice2ContoursPt2(self.pt2Data, self.sliceIndex)
 
     def key_release(self, event):
