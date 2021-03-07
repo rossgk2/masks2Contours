@@ -18,9 +18,7 @@ class Config(NamedTuple):
     downsample: int
     upperBdNumContourPts: int  # An upper bound on the number of contour points.
 
-def main(PyQt_objs):
-    print("masks2Contours.main()")
-
+def main(MPL_objs):
     # For debugging: don't use scientific notation when printing out ndarrays.
     np.set_printoptions(suppress = True)
 
@@ -45,27 +43,26 @@ def main(PyQt_objs):
     # SAcontours and LAcontours are dicts whose keys are strings such as "LVendo" or "RVsept" and whose values are
     # m x 2 ndarrays containing the contour points. SAinserts is a dict with the two keys "RVinserts" and "RVInsertsWeights".
     (SAcontours, SAinserts) = masks2ContoursSA(segName, frameNum, config)
-    print("masks2ContoursSA() is done")
-    LAcontours = masks2ContoursLA(LA_segs, frameNum, numSlices = len(LA_names), config = config, PyQt_objs = PyQt_objs)
+    LAcontours = masks2ContoursLA(LA_segs, frameNum, numSlices = len(LA_names), config = config, MPL_objs = MPL_objs)
 
     # Get valve points.
-    # valves = getValvePoints(frameNum, fldr, imgName)
+    valves = getValvePoints(frameNum, fldr, imgName)
 
-    # # Initialize SAsliceIndices to hold the indices of the slices we will soon iterate over.
-    # # Short axis slices without any contours are omitted.
-    # SAsliceIndices = getSAsliceIndices(SAcontours)
+    # Initialize SAsliceIndices to hold the indices of the slices we will soon iterate over.
+    # Short axis slices without any contours are omitted.
+    SAsliceIndices = getSAsliceIndices(SAcontours)
 
-    # # Calculate apex using "method 2" from the MATLAB script.
-    # LA_LVepiContours = LAcontours["LVepi"]
-    # epiPts1 = np.squeeze(LA_LVepiContours[:, :, 0])
-    # epiPts2 = np.squeeze(LA_LVepiContours[:, :, 2])
-    # apex = mut.calcApex(epiPts1, epiPts2)
+    # Calculate apex using "method 2" from the MATLAB script.
+    LA_LVepiContours = LAcontours["LVepi"]
+    epiPts1 = np.squeeze(LA_LVepiContours[:, :, 0])
+    epiPts2 = np.squeeze(LA_LVepiContours[:, :, 2])
+    apex = mut.calcApex(epiPts1, epiPts2)
 
-    # # Plot the results.
-    # plotResults(SAsliceIndices, SAcontours, SAinserts, LAcontours, valves, apex)
+    # Plot the results.
+    plotResults(SAsliceIndices, SAcontours, SAinserts, LAcontours, valves, apex)
 
-    # # Write the results to two text files.
-    # writeResults(frameNum, SAsliceIndices, SAcontours, SAinserts, LAcontours, valves, apex, fldr)
+    # Write the results to two text files.
+    writeResults(frameNum, SAsliceIndices, SAcontours, SAinserts, LAcontours, valves, apex, fldr)
 
 def getValvePoints(frameNum, fldr, imgName):
     # Get valve points for mitral valve (mv), tricuspid valve (tv), aortic valve (av), and pulmonary valve (pv).
