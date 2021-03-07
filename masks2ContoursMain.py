@@ -42,8 +42,14 @@ def main(PyQt_objs):
     #
     # SAcontours and LAcontours are dicts whose keys are strings such as "LVendo" or "RVsept" and whose values are
     # m x 2 ndarrays containing the contour points. SAinserts is a dict with the two keys "RVinserts" and "RVInsertsWeights".
-    (SAcontours, SAinserts) = masks2ContoursSA(segName, frameNum, config)
+    SAresults = masks2ContoursSA(segName, frameNum, config)
     LAcontours = masks2ContoursLA(LA_segs, frameNum, numSlices = len(LA_names), config = config, PyQt_objs = PyQt_objs)
+
+    finishUp(SAresults, LAcontours, frameNum, fldr, imgName)
+
+def finishUp(SAresults, LAcontours, frameNum, fldr, imgName):
+    # Unpack input.
+    (SAcontours, SAinserts) = SAresults
 
     # Get valve points.
     valves = getValvePoints(frameNum, fldr, imgName)
