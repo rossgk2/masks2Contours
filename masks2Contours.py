@@ -169,6 +169,11 @@ def slice2ContoursPt1(inputsHolder, outputsHolder, config, sliceIndex, SA_LA, Py
         # This call writes to "epiLVContours".
         contoursToImageCoords(LVepiCS, inputsHolder.transform, sliceIndex, outputsHolder.LVepiContours, SA_LA)
 
+
+    # Wrap up stuff we've computed so that it can be passed to slice2ContoursPt2() in the below.
+    pt2Data = SimpleNamespace(inputsHolder = inputsHolder, outputsHolder = outputsHolder, RVseptCS = RVseptCS,
+                              RVFW_CS = RVFW_CS, config = config, SA_LA = SA_LA)
+
     # RV
     if not RVendoIsEmpty:
         RVFW_CS = cleanContours(RVFW_CS, config.downsample)
@@ -177,16 +182,10 @@ def slice2ContoursPt1(inputsHolder, outputsHolder, config, sliceIndex, SA_LA, Py
         # If doing short axis, get the indices corresponding to insertion points in the RV.
         if SA_LA == "sa":
             tmpRV_insertIndices = ut.getRVinsertIndices(RVFW_CS)
-
-        RVEndoIsEmptyAfterCleaning = (RVFW_CS is None or RVseptCS is None) or (RVFW_CS.size == 0 or RVseptCS.size == 0)
-
-        # Wrap up stuff we've computed so that it can be passed to slice2ContoursPt2() in the below.
-        pt2Data = SimpleNamespace(inputsHolder = inputsHolder, outputsHolder = outputsHolder, RVseptCS = RVseptCS,
-                         RVFW_CS = RVFW_CS, config = config, SA_LA = SA_LA)
-        if SA_LA == "sa":
             pt2Data.tmpRV_insertIndices = tmpRV_insertIndices
 
         # If doing long axis, remove basal line segment in RVFW LA contour.
+        RVEndoIsEmptyAfterCleaning = (RVFW_CS is None or RVseptCS is None) or (RVFW_CS.size == 0 or RVseptCS.size == 0)
         if SA_LA == "la" and not RVEndoIsEmptyAfterCleaning:
             # Set up the scatter plot that will be passed to the lasso selector.
             figI, axI = plt.subplots() # I for "inspection"
