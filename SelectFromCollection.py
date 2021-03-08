@@ -96,6 +96,7 @@ class SelectFromCollection(object):
             # Remove the points that were selected from the contour.
             RVFW_CS = self.pt2Data.RVFW_CS
             RVFW_CS = ut.deleteHelper(RVFW_CS, self.ind, axis = 0)
+            self.pt2Data.RVFW_CS = RVFW_CS
 
             # Finish up the masks2Contours process.
             masks2Contours.slice2ContoursPt2(pt2Data = self.pt2Data, sliceIndex = self.sliceIndex, numLASlices = self.numLAslices)

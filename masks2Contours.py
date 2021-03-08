@@ -243,7 +243,7 @@ def slice2ContoursPt2(pt2Data, sliceIndex, numLASlices):
     LVendoContours = pt2Data.outputsHolder.LVendoContours
     LVepiContours = pt2Data.outputsHolder.LVepiContours
     RVseptContours = pt2Data.outputsHolder.RVseptContours
-    RVFWendoContours = pt2Data.outputsHolder.RVseptContours
+    RVFWendoContours = pt2Data.outputsHolder.RVFWendoContours
     RVFWepiContours = pt2Data.outputsHolder.RVFWepiContours
     RVseptCS = pt2Data.RVseptCS
     RVFW_CS = pt2Data.RVFW_CS
