@@ -1,11 +1,10 @@
-import csv
 import sys
 sys.path.append("masks2ContoursScripts")
 
+import csv
 from types import SimpleNamespace
 
 import masks2ContoursMainUtil as mut
-
 import matplotlib.pyplot as plt
 import nibabel as nib
 import numpy as np
@@ -136,8 +135,6 @@ def slice2ContoursPt1(inputsHolder, outputsHolder, config, sliceIndex, numLAslic
     # Get contours for each slice in the different regions of the heart. In the following variable names,
     # "CS" stands for "contour slice".
 
-    print("sliceIndex = " + str(sliceIndex))
-
     LVendoCS = getContoursFromMask(inputsHolder["LVendo"], irregMaxSize = 20)
     LVepiCS = getContoursFromMask(inputsHolder["LVepi"], irregMaxSize = 20)
     RVendoCS = getContoursFromMask(inputsHolder["RVendo"], irregMaxSize = 20)
@@ -178,13 +175,8 @@ def slice2ContoursPt1(inputsHolder, outputsHolder, config, sliceIndex, numLAslic
     if not LVendoIsEmpty:
         LVendoCS = cleanContours(LVendoCS, config.downsample)
 
-        if SA_LA == "la":
-            print("before: " + str(sliceIndex))
         # This call writes to "endoLVContours".
         contoursToImageCoords(LVendoCS, inputsHolder["transform"], sliceIndex, outputsHolder.LVendoContours, SA_LA)
-
-        if SA_LA == "la":
-            print("after: " + str(sliceIndex))
 
     # LV epi
     if not LVepiIsEmpty:

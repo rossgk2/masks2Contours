@@ -1,20 +1,12 @@
 import sys
-from types import SimpleNamespace
-
-import masks2Contours
-
 sys.path.append("masks2ContoursScripts")
 
-import csv
 from glob import glob
 from typing import NamedTuple
+from types import SimpleNamespace
 
-import matplotlib.pyplot as plt
-import nibabel as nib
 import numpy as np
 
-import masks2ContoursMainUtil as mut
-import masks2ContoursUtil as ut
 from masks2Contours import masks2ContoursSA, masks2ContoursLA
 
 class Config(NamedTuple):
