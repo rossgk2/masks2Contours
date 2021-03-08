@@ -1,8 +1,9 @@
 import sys
-from types import SimpleNamespace
-from typing import NamedTuple
-
 sys.path.append("masks2ContoursScripts")
+
+from types import SimpleNamespace
+
+import masks2ContoursMainUtil as mut
 
 import matplotlib.pyplot as plt
 import nibabel as nib
@@ -269,17 +270,16 @@ def slice2ContoursPt2(pt2Data, sliceIndex, numLASlices):
 
     if SA_LA == "la":
         if sliceIndex < numLASlices:
-            LAcontours = {"LVendo": LVendoContours, "LVepi": LVepiContours, "RVFWendo": RVFWendoContours,
-                          "RVFWepi": RVFWepiContours, "RVsept": RVseptContours}
-            mainObjs = pt2Data.mainObjs
-            finishUp(SAresults = mainObjs.SAresults, LAcontours = LAcontours, frameNum = mainObjs.frameNum,
-                                        fldr = mainObjs.fldr, imgName = mainObjs.imgName)
-        else:
             pt2Data.inputsHolder.sliceIndex += 1
             slice2ContoursPt1(inputsHolder = pt2Data.inputsHolder, outputsHolder = pt2Data.outputsHolder,
                               config = pt2Data.config, sliceIndex = sliceIndex + 1, numLAslices = numLASlices,
                               SA_LA = pt2Data.SA_LA, PyQt_objs = pt2Data.PyQt_objs, mainObjs = pt2Data.mainObjs)
-
+        else:
+            LAcontours = {"LVendo": LVendoContours, "LVepi": LVepiContours, "RVFWendo": RVFWendoContours,
+                          "RVFWepi": RVFWepiContours, "RVsept": RVseptContours}
+            mainObjs = pt2Data.mainObjs
+            finishUp(SAresults = mainObjs.SAresults, LAcontours = LAcontours, frameNum = mainObjs.frameNum,
+                     fldr = mainObjs.fldr, imgName = mainObjs.imgName)
 
 # Helper function for converting contours to an image coordinate system. This function writes to "contours".
 def contoursToImageCoords(maskSlice, transform, sliceIndex, contours, SA_LA):

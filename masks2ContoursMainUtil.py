@@ -10,9 +10,9 @@ from scipy.spatial.distance import cdist
 # Return the point p1 in epiPts1 such that p1 minimizes the distance between p1 and p2, where p2 can be
 # any point in epiPts2.
 def calcApex(epiPts1, epiPts2):
-    epiPts1 = ut.removeZerorows(epiPts1)
-    epiPts2 = ut.removeZerorows(epiPts2)
-    dist = cdist(epiPts1, epiPts2) # Compute pairwise distances.
+    _epiPts1 = ut.removeZerorows(epiPts1)
+    _epiPts2 = ut.removeZerorows(epiPts2)
+    dist = cdist(_epiPts1, _epiPts2) # Compute pairwise distances.
     apexIndex = np.unravel_index(np.argmin(dist), dist.shape)[0]
     if apexIndex.shape != ():
         apexIndex = apexIndex[0]
