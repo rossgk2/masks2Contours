@@ -43,11 +43,3 @@ def main(PyQt_objs):
     mainObjs = SimpleNamespace(SAresults = SAresults, frameNum = frameNum, fldr = fldr, imgName = imgName)
     masks2ContoursLA(LA_segs = LA_segs, frameNum = frameNum, numSlices = len(LA_names), config = config,
                      PyQt_objs = PyQt_objs, mainObjs = mainObjs)
-
-
-
-class test:
-    pass
-
-t = test()
-main(t)
