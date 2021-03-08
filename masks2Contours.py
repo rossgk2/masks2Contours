@@ -1,3 +1,4 @@
+import csv
 import sys
 sys.path.append("masks2ContoursScripts")
 
@@ -269,7 +270,7 @@ def slice2ContoursPt2(pt2Data, sliceIndex, numLASlices):
         contoursToImageCoords(RVepiSC, transform, sliceIndex, RVFWepiContours, "SA")
 
     if SA_LA == "la":
-        if sliceIndex < numLASlices:
+        if sliceIndex + 1 < numLASlices:
             pt2Data.inputsHolder.sliceIndex += 1
             slice2ContoursPt1(inputsHolder = pt2Data.inputsHolder, outputsHolder = pt2Data.outputsHolder,
                               config = pt2Data.config, sliceIndex = sliceIndex + 1, numLAslices = numLASlices,
