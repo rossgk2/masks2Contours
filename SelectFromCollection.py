@@ -1,3 +1,6 @@
+import sys
+sys.path.append("masks2ContoursScripts")
+
 # This file is from https://matplotlib.org/3.1.1/gallery/widgets/lasso_selector_demo_sgskip.html.
 import matplotlib.pyplot as plt
 import numpy as np
