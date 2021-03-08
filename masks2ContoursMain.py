@@ -1,4 +1,8 @@
 import sys
+from types import SimpleNamespace
+
+import masks2Contours
+
 sys.path.append("masks2ContoursScripts")
 
 import csv
@@ -43,9 +47,10 @@ def main(PyQt_objs):
     # SAcontours and LAcontours are dicts whose keys are strings such as "LVendo" or "RVsept" and whose values are
     # m x 2 ndarrays containing the contour points. SAinserts is a dict with the two keys "RVinserts" and "RVInsertsWeights".
     SAresults = masks2ContoursSA(segName, frameNum, config)
-    LAcontours = masks2ContoursLA(LA_segs, frameNum, numSlices = len(LA_names), config = config, PyQt_objs = PyQt_objs)
 
-    finishUp(SAresults, LAcontours, frameNum, fldr, imgName)
+    mainObjs = SimpleNamespace(SAresults = SAresults, frameNum = frameNum, fldr = fldr, imgName = imgName)
+    masks2ContoursLA(LA_segs = LA_segs, frameNum = frameNum, numSlices = len(LA_names), config = config,
+                     PyQt_objs = PyQt_objs, mainObjs = mainObjs)
 
 def finishUp(SAresults, LAcontours, frameNum, fldr, imgName):
     # Unpack input.

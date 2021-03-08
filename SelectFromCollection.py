@@ -98,7 +98,7 @@ class SelectFromCollection(object):
             RVFW_CS = ut.deleteHelper(RVFW_CS, self.ind, axis = 0)
 
             # Finish up the masks2Contours process.
-            masks2Contours.slice2ContoursPt2(pt2Data = self.pt2Data, sliceIndex = self.sliceIndex)
+            masks2Contours.slice2ContoursPt2(pt2Data = self.pt2Data, sliceIndex = self.sliceIndex, numLASlices = self.numLAslices)
 
     def key_release(self, event):
         if event.key == "shift":
