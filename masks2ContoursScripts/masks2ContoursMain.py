@@ -14,7 +14,7 @@ class Config(NamedTuple):
     downsample: int
     upperBdNumContourPts: int  # An upper bound on the number of contour points.
 
-def main(PyQt_objs):
+def main(imgName, segName, LA_names, LA_segs, PyQt_objs):
     # For debugging: don't use scientific notation when printing out ndarrays.
     np.set_printoptions(suppress = True)
 
@@ -26,12 +26,12 @@ def main(PyQt_objs):
     fldr = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\"
 
     # These are filepaths for the SA.
-    imgName = fldr + "CINE_SAX.nii"
-    segName = fldr + "CINE_SAX_" + str(frameNum) + ".nii"
+    # imgName = fldr + "CINE_SAX.nii"
+    # segName = fldr + "CINE_SAX_" + str(frameNum) + ".nii"
 
     # These are lists of filepaths for the LA.
-    LA_segs = glob(fldr + "LAX_[0-9]ch_1.nii")
-    LA_names = glob(fldr + "RReg_LAX_[0-9]ch_to_Aligned_SA.nii")
+    # LA_names = glob(fldr + "RReg_LAX_[0-9]ch_to_Aligned_SA.nii")
+    # LA_segs = glob(fldr + "LAX_[0-9]ch_1.nii")
 
     # The following two functions, masks2ContoursSA() and masks2ContoursLA(), produce labeled contour points from masks for the
     # short and long axis image files, respectively.

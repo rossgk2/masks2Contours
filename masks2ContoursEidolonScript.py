@@ -1,6 +1,7 @@
 # Use this by first loading the 4 nifti files then running the script through the File menu
 
 from eidolon import *
+from masks2ContoursScripts import masks2ContoursMain
 mgr:SceneManager=getSceneMgr()  # not needed but sorts out IDE variable resolution
 
 import sys
@@ -25,6 +26,7 @@ from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
+MENU_KEYS = ["SA", "SA_name", "LA1", "LA2", "LA3", "LA1_name", "LA2_name", "LA3_name"]
 
 class MplCanvas(FigureCanvasQTAgg):
 	def __init__(self, parent=None, width=5, height=4, dpi=100,is_3d=False):
@@ -51,47 +53,36 @@ class MplNavWidget(QtWidgets.QWidget):
 		layout = QtWidgets.QVBoxLayout(self)
 		layout.setContentsMargins(0,0,0,0)
 		layout.addWidget(self.mpl_toolbar)
-		layout.addWidget(self.mpl_canvas)       
-			
-def _show_3d_plot():  # run by the above class when enter pressed
-  
-	# Here you would do the last of your processing and then show the 3d scatter plot of the landmarks 
-	# and we'd save the results to a new scene object and/or to an output file 
-  
-	widg=MplNavWidget(is_3d=True)
-	
-	# temporary mesh plot to demonstrate 3d rendering works through matplotlib
-	x=np.linspace(-6,6,30) # X coordinates
-	y=np.linspace(-6,6,30) # Y coordinates
-	X,Y=np.meshgrid(x,y) # Forming MeshGrid
-	Z=np.sin(np.sqrt(X**2+Y**2))
-	widg.axes.plot_surface(X,Y,Z) # plots the 3D surface plot
-	
-	mgr.win.createDock("MPL Widget",widg)
-	return widg
-
-
+		layout.addWidget(self.mpl_canvas)
+		
 def _select_images(dockparent, valmap):
+	# print("_select_images")
 	dockparent.close()
 	
-	# Traverse the selected images in the first panel, this code just prints out the name and the file it was loaded from
-	# Instead you would want to pick out the four images, make sure they were chosen, load the data from their respective
-	# nifti files again then run your code
-	for k,v in valmap.items():
-		obj=mgr.findObject(v)
-		filenames=None
-		
+	# Load the filepaths for the NIFTI files.
+	dict = {}
+	for key, value in valmap.items():
+		obj = mgr.findObject(value)
 		if obj is not None:
-			filenames=obj.plugin.getObjFiles(obj)
-			
-		print(k,v,filenames)
-		
-	# next step is to choose the points you want to remove by selecting them in the next view
-		
-	# create the next dock which will have the point-choosing scatter plot
+			filenames = obj.plugin.getObjFiles(obj)
+			dict[key] = filenames[0]
 	
-	
+	# Check that all required files have been loaded.
+	if not set(MENU_KEYS).issubset(set(dict.keys())):
+		print("Error!")
+		# TO-DO: actually handle the error
 
+	# Prepare parameters to pass to masks2Contours.
+	imgName = dict["SA_name"]
+	segName = dict["SA"]
+	LA_names = [dict["LA1_name"], dict["LA2_name"], dict["LA3_name"]]
+	LA_segs = [dict["LA1"], dict["LA2"], dict["LA3"]]
+
+	# Run the masks2Contours script, passing along (mgr, widg).
+	widg = MplNavWidget()
+	PyQt_objs = (mgr, widg)
+	masks2ContoursMain.main(imgName, segName, LA_names, LA_segs, PyQt_objs)
+	
 def _show_panel():
 	# need to run all code in a function which will be executed by the main thread, needed for Qt
 	
@@ -100,10 +91,14 @@ def _show_panel():
 	
 	# create named parameters used by an interface generator to create the panel with the four drop-down menus of image names
 	params=[
-		ParamDef("SAX","Short Axis",ParamType._strlist,names),
-		ParamDef("LAX1","Long Axis 1",ParamType._strlist,names),
-		ParamDef("LAX2","Long Axis 2",ParamType._strlist,names),
-		ParamDef("LAX3","Long Axis 3",ParamType._strlist,names)
+		ParamDef(MENU_KEYS[0],"Short axis",ParamType._strlist,names),
+		ParamDef(MENU_KEYS[1], "Short axis name", ParamType._strlist, names),
+		ParamDef(MENU_KEYS[2],"Long axis 1",ParamType._strlist,names),
+		ParamDef(MENU_KEYS[3],"Long axis 2",ParamType._strlist,names),
+		ParamDef(MENU_KEYS[4],"Long axis 3",ParamType._strlist,names),
+		ParamDef(MENU_KEYS[5], "Long axis 1 name", ParamType._strlist, names),
+		ParamDef(MENU_KEYS[6], "Long axis 2 name", ParamType._strlist, names),
+		ParamDef(MENU_KEYS[7], "Long axis 3 name", ParamType._strlist, names)
 	]
 	
 	p=ParamPanel(params)  # create the widget with components made from the ParamDef objects above
@@ -117,14 +112,8 @@ def _show_panel():
 	dockparent=mgr.win.dockWidgets[-1].parent()
 	
 	# when the button is clicked the next function in the chain is called passing in the needed parameters
-	# button.clicked.connect(lambda:_select_images(dockparent,p.getParamMap()))
-	from masks2ContoursScripts import masks2ContoursMain
-	dockparent.close()
-	widg = MplNavWidget()
-	PyQt_objs = (mgr, widg)
-	masks2ContoursMain.main(PyQt_objs)
-
-
+	button.clicked.connect(lambda:_select_images(dockparent,p.getParamMap()))
+	
 	return p
 	
 
