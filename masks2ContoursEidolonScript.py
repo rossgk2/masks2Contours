@@ -5,6 +5,7 @@ from masks2ContoursScripts import masks2ContoursMain
 mgr:SceneManager=getSceneMgr()  # not needed but sorts out IDE variable resolution
 
 import sys
+import os.path
 import numpy as np
 	
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -78,10 +79,21 @@ def _select_images(dockparent, valmap):
 	LA_names = [dict["LA1_name"], dict["LA2_name"], dict["LA3_name"]]
 	LA_segs = [dict["LA1"], dict["LA2"], dict["LA3"]]
 
+	# Get the folder in which these files reside, if all files do indeed live in the same folder.
+	imgFldr = os.path.dirname(imgName)
+	segFldr = os.path.dirname(segName)
+	LA_names_fldrs = [os.path.dirname(x) for x in LA_names]
+	LA_segs_fldrs = [os.path.dirname(x) for x in LA_segs]
+	fldrSet = {imgFldr, segFldr}.union(LA_names_fldrs).union(LA_segs_fldrs)
+	if len(fldrSet) == 1: # if all folders containing the files represented by imgName, segName, LA_names, LA_segs are the same
+		fldr = imgFldr
+	else:
+		print("The image files and segmentations should all be in the same folder", file = sys.stderr)
+
 	# Run the masks2Contours script, passing along (mgr, widg).
 	widg = MplNavWidget()
 	PyQt_objs = (mgr, widg)
-	masks2ContoursMain.main(imgName, segName, LA_names, LA_segs, PyQt_objs)
+	masks2ContoursMain.main(fldr, imgName, segName, LA_names, LA_segs, PyQt_objs)
 	
 def _show_panel():
 	# need to run all code in a function which will be executed by the main thread, needed for Qt
