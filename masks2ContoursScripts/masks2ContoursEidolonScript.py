@@ -90,6 +90,10 @@ def _select_images(dockparent, valmap):
 	else:
 		print("The image files and segmentations should all be in the same folder", file = sys.stderr)
 
+	# The filepath returned by os.path.dirname() doesn't end with a backslash, as it should.
+	fldr += "\\"
+	print("hmm")
+
 	# Run the masks2Contours script, passing along (mgr, widg).
 	widg = MplNavWidget()
 	PyQt_objs = (mgr, widg)
