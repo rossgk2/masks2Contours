@@ -34,7 +34,8 @@ class SelectFromCollection(object):
         alpha value of 1 and non-selected points to `alpha_other`.
     """
 
-    def __init__(self, ax, collection, alpha_other=0.3):
+    def __init__(self, passToLasso, ax, collection, alpha_other=0.3):
+        self.passToLasso = passToLasso
         self.ax = ax
         self.fig = self.ax.figure
         self.canvas = self.fig.canvas
@@ -89,20 +90,26 @@ class SelectFromCollection(object):
         if event.key == "shift":
             self.is_subtract = False
         elif event.key == "enter":
+            print("Enter was pressed")
+            # Remove the points that were selected from the contour by the user.
+            print("In lasso selector, before removal. RVFW_CS is " + str(self.passToLasso.pt2Data.RVFW_CS))
+            pt2Data = self.passToLasso.pt2Data
+            pt2Data.RVFW_CS = ut.deleteHelper(pt2Data.RVFW_CS, self.ind, axis = 0)
+            print("In lasso selector, after removal. RVFW_CS is " + str(pt2Data.RVFW_CS))
+
+
+            # Debug
+            print("Indices that were removed: " + str(self.ind))
             print("Removed points:")
             print(self.pts[self.ind])
+        
             self.disconnect()
             self.ax.set_title("")
             self.canvas.draw()
             self.parent_widg.close()
-            
-            # Remove the points that were selected from the contour.
-            RVFW_CS = self.pt2Data.RVFW_CS
-            RVFW_CS = ut.deleteHelper(RVFW_CS, self.ind, axis = 0)
-            self.pt2Data.RVFW_CS = RVFW_CS
 
             # Finish up the masks2Contours process.
-            masks2Contours.slice2ContoursPt2(pt2Data = self.pt2Data, sliceIndex = self.sliceIndex, numLASlices = self.numLAslices)
+            masks2Contours.slice2ContoursPt2(pt2Data = pt2Data, sliceIndex = self.passToLasso.sliceIndex, numLASlices = self.passToLasso.numLAslices)
 
     def key_release(self, event):
         if event.key == "shift":
