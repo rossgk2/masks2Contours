@@ -424,7 +424,7 @@ def getValvePoints(frameNum, fldr, imgName):
 	# Note: the valve points computed by this Python script are slightly different than those produced by MATLAB because
 	# the interpolation function used in this code, np.interp(), uses a different interplation method than the MATLAB interp1().
 	numFrames = nib.load(imgName).get_fdata().shape[3]  # all good
-	(mv, tv, av, pv) = mut.manuallyCompileValvePoints(fldr + "\\", numFrames, frameNum)
+	(mv, tv, av, pv) = mut.manuallyCompileValvePoints(fldr, numFrames, frameNum)
 
 	# Remove rows that are all zero from mv, tv, av, pv.
 	mv = np.reshape(mv, (-1, 3))  # Reshape mv to have shape m x 3 for some m (the -1 indicates an unspecified value).
@@ -433,6 +433,7 @@ def getValvePoints(frameNum, fldr, imgName):
 	av = ut.removeZerorows(av)
 	pv = ut.removeZerorows(pv)
 	return (mv, tv, av, pv)
+
 
 def getSAsliceIndices(SAContours):
 	SA_LVendoContours = SAContours["LVendo"]
@@ -449,7 +450,7 @@ def getSAsliceIndices(SAContours):
 
 def plotResults(includedSlices, SAContours, SAinserts, LAContours, valves, apex):
 	# Unwrap valve points.
-	(mv, tv, av, pv) = valves
+	(mv, av, tv, pv) = valves
 
 	# Plot short axis contours.
 	fig, ax = plt.subplots(1, 1, subplot_kw = {"projection": "3d"})
@@ -500,7 +501,7 @@ def plotResults(includedSlices, SAContours, SAinserts, LAContours, valves, apex)
 
 def writeResults(frameNum, includedSlices, SAContours, SAinserts, LAContours, valves, apex, fldr):
 	# Unwrap valve points.
-	(mv, tv, av, pv) = valves
+	(mv, av, tv, pv) = valves
 
 	# Set up file writers.
 	try:
