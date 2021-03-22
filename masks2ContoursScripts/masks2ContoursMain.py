@@ -14,7 +14,7 @@ class Config(NamedTuple):
     downsample: int
     upperBdNumContourPts: int  # An upper bound on the number of contour points.
 
-def main(imgName, segName, LA_names, LA_segs, PyQt_objs):
+def main(fldr, imgName, segName, LA_names, LA_segs, PyQt_objs):
     # For debugging: don't use scientific notation when printing out ndarrays.
     np.set_printoptions(suppress = True)
 
@@ -23,7 +23,7 @@ def main(imgName, segName, LA_names, LA_segs, PyQt_objs):
     frameNum = 1  # Index of frame to be segmented.
 
     # Get filepaths ready.
-    fldr = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\"
+    # fldr = "C:\\Users\\Ross\\Documents\\Data\\CMR\\Student_Project\\P3\\"
 
     # These are filepaths for the SA.
     # imgName = fldr + "CINE_SAX.nii"
