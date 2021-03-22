@@ -57,7 +57,6 @@ class MplNavWidget(QtWidgets.QWidget):
 		layout.addWidget(self.mpl_canvas)
 		
 def _select_images(dockparent, valmap):
-	# print("_select_images")
 	dockparent.close()
 	
 	# Load the filepaths for the NIFTI files.
@@ -90,11 +89,10 @@ def _select_images(dockparent, valmap):
 	else:
 		print("The image files and segmentations should all be in the same folder", file = sys.stderr)
 
-	# The filepath returned by os.path.dirname() doesn't end with a backslash, as it should.
+	# The filepath returned by os.path.dirname() doesn't end with a backslash, as it should, so we'll add one.
 	fldr += "\\"
-	print("hmm")
-
-	# Run the masks2Contours script, passing along (mgr, widg).
+	
+	# Run the masks2Contours script, passing along fldr and (mgr, widg).
 	widg = MplNavWidget()
 	PyQt_objs = (mgr, widg)
 	masks2ContoursMain.main(fldr, imgName, segName, LA_names, LA_segs, PyQt_objs)
@@ -103,29 +101,28 @@ def _show_panel():
 	# need to run all code in a function which will be executed by the main thread, needed for Qt
 	
 	# mgr.objs is the list of loaded scene objects, pick out only the names of images
-	names=[obj.getName() for obj in mgr.objs if isinstance(obj,ImageSceneObject)]
-	
+	names = [obj.getName() for obj in mgr.objs if isinstance(obj,ImageSceneObject)]
+
 	# create named parameters used by an interface generator to create the panel with the four drop-down menus of image names
-	params=[
-		ParamDef(MENU_KEYS[0],"Short axis",ParamType._strlist,names),
-		ParamDef(MENU_KEYS[1], "Short axis name", ParamType._strlist, names),
-		ParamDef(MENU_KEYS[2],"Long axis 1",ParamType._strlist,names),
-		ParamDef(MENU_KEYS[3],"Long axis 2",ParamType._strlist,names),
-		ParamDef(MENU_KEYS[4],"Long axis 3",ParamType._strlist,names),
-		ParamDef(MENU_KEYS[5], "Long axis 1 name", ParamType._strlist, names),
-		ParamDef(MENU_KEYS[6], "Long axis 2 name", ParamType._strlist, names),
-		ParamDef(MENU_KEYS[7], "Long axis 3 name", ParamType._strlist, names)
+	params = [
+		ParamDef(MENU_KEYS[0],"Short axis (segmentation)",ParamType._strlist,names),
+		ParamDef(MENU_KEYS[1], "Short axis (header metadata)", ParamType._strlist, names),
+		ParamDef(MENU_KEYS[2],"Long axis 2ch (segmentation)",ParamType._strlist,names),
+		ParamDef(MENU_KEYS[3],"Long axis 3ch (segmentation)",ParamType._strlist,names),
+		ParamDef(MENU_KEYS[4],"Long axis 4ch (segmentation)",ParamType._strlist,names),
+		ParamDef(MENU_KEYS[5], "Long axis 2ch (header metadata)", ParamType._strlist, names),
+		ParamDef(MENU_KEYS[6], "Long axis 3ch (header metadata)", ParamType._strlist, names),
+		ParamDef(MENU_KEYS[7], "Long axis 4ch (header metadata)", ParamType._strlist, names)
 	]
 	
-	p=ParamPanel(params)  # create the widget with components made from the ParamDef objects above
+	p = ParamPanel(params)  # create the widget with components made from the ParamDef objects above
 	p.layout.setContentsMargins(5,5,5,5)
 	
-	button=QtWidgets.QPushButton("OK")
+	button = QtWidgets.QPushButton("OK")
 	p.layout.addWidget(button)
-	
+
 	mgr.win.createDock("Select Short and Long Axes Views",p)
-	
-	dockparent=mgr.win.dockWidgets[-1].parent()
+	dockparent = mgr.win.dockWidgets[-1].parent()
 	
 	# when the button is clicked the next function in the chain is called passing in the needed parameters
 	button.clicked.connect(lambda:_select_images(dockparent,p.getParamMap()))
