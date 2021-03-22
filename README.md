@@ -18,7 +18,7 @@ Here's the full 3D output for some sample data.
 
 ## Differences between this Python port and the MATLAB original 
 
-In the MATLAB original, the functions `masks2contoursSA_manual()` converted masks to contours for the short axis (SA) images, and the file `masks2contoursLA_manual()` converted masks to contours for the long axis (LA) images. These functions are replaced by `masks2ContoursSA()` and `masks2ContoursLA()` in the Python port.
+In the MATLAB original, the function `masks2contoursSA_manual()` converted masks to contours for the short axis (SA) images, and the function `masks2contoursLA_manual()` converted masks to contours for the long axis (LA) images. These functions are replaced by `masks2ContoursSA()` and `masks2ContoursLA()` in the Python port.
 
 The Python port is more abstracted than the MATLAB original. **Before the commits on Jan. 11, 2021**, the Python port mostly mirrored the MATLAB code, with the main differences being that the Python code had the following abstractions:
 - plotting functions (`subplotHelper` and `subplotHelperMulti`)
