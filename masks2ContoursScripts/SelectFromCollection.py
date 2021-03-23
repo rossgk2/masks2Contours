@@ -90,19 +90,13 @@ class SelectFromCollection(object):
         if event.key == "shift":
             self.is_subtract = False
         elif event.key == "enter":
-            print("Enter was pressed")
             # Remove the points that were selected from the contour by the user.
-            print("In lasso selector, before removal. RVFW_CS is " + str(self.passToLasso.pt2Data.RVFW_CS))
             pt2Data = self.passToLasso.pt2Data
+            print("shape: {}".format(pt2Data.RVFW_CS.shape))
+            print("ind: {}".format(self.ind))
             pt2Data.RVFW_CS = ut.deleteHelper(pt2Data.RVFW_CS, self.ind, axis = 0)
-            print("In lasso selector, after removal. RVFW_CS is " + str(pt2Data.RVFW_CS))
-
-
-            # Debug
-            print("Indices that were removed: " + str(self.ind))
-            print("Removed points:")
-            print(self.pts[self.ind])
-        
+            
+            # Deconstruct the lasso selector.
             self.disconnect()
             self.ax.set_title("")
             self.canvas.draw()

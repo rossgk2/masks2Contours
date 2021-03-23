@@ -186,6 +186,8 @@ def slice2ContoursPt1(inputsHolder, outputsHolder, config, sliceIndex, numLAslic
 		contoursToImageCoords(LVepiCS, inputsHolder["transform"], sliceIndex, outputsHolder.LVepiContours, SA_LA)
 
 	# RV
+	print("slice index is {}".format(sliceIndex))
+	tmpRV_insertIndices = None
 	if not RVendoIsEmpty:
 		RVFW_CS = cleanContours(RVFW_CS, config.downsample)
 		RVseptCS = cleanContours(RVseptCS, config.downsample)
@@ -193,26 +195,27 @@ def slice2ContoursPt1(inputsHolder, outputsHolder, config, sliceIndex, numLAslic
 		# If doing short axis, get the indices corresponding to insertion points in the RV.
 		if SA_LA == "sa":
 			tmpRV_insertIndices = ut.getRVinsertIndices(RVFW_CS)
-		else:
-			tmpRV_insertIndices = None
 
 		# If doing long axis, remove basal line segment in RVFW LA contour.
 		RVEndoIsEmptyAfterCleaning = (RVFW_CS is None or RVseptCS is None) or (RVFW_CS.size == 0 or RVseptCS.size == 0)
 		if SA_LA == "la" and not RVEndoIsEmptyAfterCleaning:
+			print("inside big if statement. slice index is {}".format(sliceIndex))
+
 			# Unpack PyQt_objs.
 			(mgr, widg) = PyQt_objs
 
-			# Set up the scatter plot that will be passed to the lasso selector.
-			title = "Select points you would like to remove. Click and drag to lasso select.\n The zoom tool may also be helpful."
-			pts = subplotHelper(widg.axes, title = title, maskSlice = np.squeeze(inputsHolder["RVendo"]), contours = RVFW_CS, color = "green", size = 20)
+			# Set up the scatter plot, "lassoPts", that will be passed to the lasso selector.
+			title = '''Select points you would like to remove: click and drag to lasso select.\n
+			Hold Shift to unremove points.\n
+			The zoom tool may also be helpful.\n
+			Press Enter to confirm your selection.'''
+			lassoPts = subplotHelper(widg.axes, title = title, maskSlice = np.squeeze(inputsHolder["RVendo"]), contours = RVFW_CS, color = "green", size = 20)
 
 			# Create the lasso selector.
-			print("about to create lasso. slice index = " + str(sliceIndex))
-			print("RVFW_CS is " + str(RVFW_CS))
 			pt2Data = SimpleNamespace(inputsHolder = inputsHolder, outputsHolder = outputsHolder, RVseptCS = RVseptCS, RVFW_CS = RVFW_CS, 
 			tmpRV_insertIndices = tmpRV_insertIndices, config = config, SA_LA = SA_LA, PyQt_objs = PyQt_objs, mainObjs = mainObjs)
 			passToLasso = SimpleNamespace(pt2Data = pt2Data, sliceIndex = sliceIndex, numLAslices = numLAslices)
-			lassoSelector = SelectFromCollection(passToLasso, widg.axes, pts)
+			lassoSelector = SelectFromCollection(passToLasso, ax = widg.axes, collection = lassoPts)
 
 			# This causes plot-with-interactive-lasso-selector to appear. When the user presses Enter,
 			# slice2ContoursPt2() is called by the callback function lassoSelector.keypress().
@@ -221,6 +224,7 @@ def slice2ContoursPt1(inputsHolder, outputsHolder, config, sliceIndex, numLAslic
 			mgr.win.createDock("MPL Widget", widg)
 			lassoSelector.parent_widg = mgr.win.dockWidgets[-1].parent() # dock widget contains `widg`, parent of that is dock itself
 		else:
+			print("in the else case! ha")
 			# Wrap up stuff we've computed so that it can be passed to slice2ContoursPt2().
 			pt2Data = SimpleNamespace(inputsHolder = inputsHolder, outputsHolder = outputsHolder, RVseptCS = RVseptCS, RVFW_CS = RVFW_CS, 
 			tmpRV_insertIndices = tmpRV_insertIndices, config = config, SA_LA = SA_LA, PyQt_objs = PyQt_objs, mainObjs = mainObjs)
@@ -229,7 +233,7 @@ def slice2ContoursPt1(inputsHolder, outputsHolder, config, sliceIndex, numLAslic
 	else:
 		# Wrap up stuff we've computed so that it can be passed to slice2ContoursPt2().
 		pt2Data = SimpleNamespace(inputsHolder = inputsHolder, outputsHolder = outputsHolder, RVseptCS = RVseptCS, RVFW_CS = RVFW_CS, 
-			tmpRV_insertIndices = None, config = config, SA_LA = SA_LA, PyQt_objs = PyQt_objs, mainObjs = mainObjs)
+			tmpRV_insertIndices = tmpRV_insertIndices, config = config, SA_LA = SA_LA, PyQt_objs = PyQt_objs, mainObjs = mainObjs)
 
 		slice2ContoursPt2(pt2Data = pt2Data, sliceIndex = sliceIndex, numLASlices = numLAslices)
 
