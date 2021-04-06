@@ -31,6 +31,7 @@ class InputsHolder:
 		if self.SA_LA == "sa":
 			return self.dict[key]
 		else: #SA_LA == "la"
+			print("__getitem__() for LA called. key = {}, sliceIndex = {}".format(key, self.sliceIndex))
 			return self.dict[key][self.sliceIndex]
 
 def masks2ContoursSA(segName, frameNum, config):
@@ -127,6 +128,7 @@ def masks2ContoursLA(LA_segs, frameNum, numSlices, config, PyQt_objs, mainObjs):
 					  numLAslices = numSlices, SA_LA = "LA", PyQt_objs = PyQt_objs, mainObjs = mainObjs)
 
 def slice2ContoursPt1(inputsHolder, outputsHolder, config, sliceIndex, numLAslices, SA_LA, PyQt_objs, mainObjs):
+	print("slice2ContoursPt1() called. sliceIndex = {}".format(sliceIndex))
 	# Check validity of SA_LA.
 	SA_LA = SA_LA.lower()
 	if not(SA_LA == "sa" or SA_LA == "la"):
@@ -138,8 +140,9 @@ def slice2ContoursPt1(inputsHolder, outputsHolder, config, sliceIndex, numLAslic
 	LVendoCS = getContoursFromMask(inputsHolder["LVendo"], irregMaxSize = 20)
 	LVepiCS = getContoursFromMask(inputsHolder["LVepi"], irregMaxSize = 20)
 	RVendoCS = getContoursFromMask(inputsHolder["RVendo"], irregMaxSize = 20)
+	print("RVendoCS.shape = {}".format(RVendoCS.shape))
 
-	# Load MATLAB variables if config indicates that we should do so.
+	# Swap the axes. We have to do this due to the way that the nibabel module handles NIFTI files.
 	LVendoIsEmpty = LVendoCS is None or np.max(LVendoCS.shape) <= 2
 	LVepiIsEmpty = LVepiCS is None or np.max(LVepiCS.shape) <= 2
 	RVendoIsEmpty = RVendoCS is None or RVendoCS.size == 0
@@ -151,13 +154,11 @@ def slice2ContoursPt1(inputsHolder, outputsHolder, config, sliceIndex, numLAslic
 	if not RVendoIsEmpty:
 		RVendoCS[:, [0, 1]] = RVendoCS[:, [1, 0]]
 
-	# Differentiate contours for RVFW (free wall) and RVS (septum).
-	# Recall "CS" stands for "contour slice".
+	# Differentiate contours for RV free wall and RV septum.
 	[RVseptCS, ia, ib] = ut.sharedRows(LVepiCS, RVendoCS)
-	RVFW_CS = RVendoCS
-	RVFW_CS = ut.deleteHelper(RVFW_CS, ib, axis = 0)  # In RVFW_CS, delete the rows with index ib.
+	RVFW_CS = ut.deleteHelper(RVendoCS, ib, axis = 0) # Delete the rows whose indices are in ib.
 
-	# Remove RVS contour points from LV epi contour
+	# Remove RV septum points from the LV epi contour.
 	LVepiCS = ut.deleteHelper(LVepiCS, ia, axis = 0)  # In LVepiCS, delete the rows with index ia.
 
 	# If doing long axis, remove line segments at base which are common to LVendoCS and LVepiCS.
@@ -166,29 +167,31 @@ def slice2ContoursPt1(inputsHolder, outputsHolder, config, sliceIndex, numLAslic
 		LVendoCS = ut.deleteHelper(LVendoCS, ia, axis = 0)
 		LVepiCS = ut.deleteHelper(LVepiCS, ib, axis = 0)
 
-	# Update the "emptiness" status of our contour slices.
+	# Since we've modified LVendoCS, LVepiCS, and RVFW_CS, we should re-check whether these variables are "empty".
 	LVendoIsEmpty = LVendoCS is None or np.max(LVendoCS.shape) <= 2
 	LVepiIsEmpty = LVepiCS is None or np.max(LVepiCS.shape) <= 2
 	RVendoIsEmpty = RVFW_CS is None or RVFW_CS.size == 0
 
-	# LV endo
+	# The rest of this function, broadly speaking, uses LVendoCS, LVepiCS, RVFW_CS as input for the function contoursToImageCoords(),
+	# which writes to outputsHolder.LVendoContours, outputsHolder.LVepiContours, and other similarly-named variables.
+	# (contoursToImageCoords() writes to its fourth argument as a side-effect).
+
+	# Input: LVendoCS, output: outputsHolder.LVendoContours
 	if not LVendoIsEmpty:
 		LVendoCS = cleanContours(LVendoCS, config.downsample)
-
-		# This call writes to "endoLVContours".
 		contoursToImageCoords(LVendoCS, inputsHolder["transform"], sliceIndex, outputsHolder.LVendoContours, SA_LA)
 
-	# LV epi
+	# Input: LVepiCS, output: outputsHolder.LVepiContours
 	if not LVepiIsEmpty:
 		LVepiCS = cleanContours(LVepiCS, config.downsample)
-
-		# This call writes to "epiLVContours".
 		contoursToImageCoords(LVepiCS, inputsHolder["transform"], sliceIndex, outputsHolder.LVepiContours, SA_LA)
 
-	# RV
+	# Do some computations to set up for doing the same thing as in the above two commented blocks of code
+	# for the RV. contoursToImageCoords() is used for the RV in slice2ContoursPt2(), which is called by the below code.
 	print("slice index is {}".format(sliceIndex))
 	tmpRV_insertIndices = None
 	if not RVendoIsEmpty:
+		print("inside the if statement coorresponding to \"# RV\"")
 		RVFW_CS = cleanContours(RVFW_CS, config.downsample)
 		RVseptCS = cleanContours(RVseptCS, config.downsample)
 
@@ -199,38 +202,40 @@ def slice2ContoursPt1(inputsHolder, outputsHolder, config, sliceIndex, numLAslic
 		# If doing long axis, remove basal line segment in RVFW LA contour.
 		RVEndoIsEmptyAfterCleaning = (RVFW_CS is None or RVseptCS is None) or (RVFW_CS.size == 0 or RVseptCS.size == 0)
 		if SA_LA == "la" and not RVEndoIsEmptyAfterCleaning:
-			print("inside big if statement. slice index is {}".format(sliceIndex))
+			print("inside the if statement that does the lasso select. sliceIndex = {}".format(sliceIndex))
 
 			# Unpack PyQt_objs.
 			(mgr, widg) = PyQt_objs
 
 			# Set up the scatter plot, "lassoPts", that will be passed to the lasso selector.
-			title = '''Select points you would like to remove: click and drag to lasso select.\n
-			Hold Shift to unremove points.\n
-			The zoom tool may also be helpful.\n
-			Press Enter to confirm your selection.'''
-			lassoPts = subplotHelper(widg.axes, title = title, maskSlice = np.squeeze(inputsHolder["RVendo"]), contours = RVFW_CS, color = "green", size = 20)
+			# The argument "title" to subplotHelper cannot be accessed later, so it doesn't matter what it is.
+			lassoPts = subplotHelper(widg.axes, title = None, maskSlice = np.squeeze(inputsHolder["RVendo"]), contours = RVFW_CS, color = "green", size = 20)
 
 			# Create the lasso selector.
 			pt2Data = SimpleNamespace(inputsHolder = inputsHolder, outputsHolder = outputsHolder, RVseptCS = RVseptCS, RVFW_CS = RVFW_CS, 
 			tmpRV_insertIndices = tmpRV_insertIndices, config = config, SA_LA = SA_LA, PyQt_objs = PyQt_objs, mainObjs = mainObjs)
 			passToLasso = SimpleNamespace(pt2Data = pt2Data, sliceIndex = sliceIndex, numLAslices = numLAslices)
+			print("passToLasso.sliceIndex = {}".format(passToLasso.sliceIndex))
 			lassoSelector = SelectFromCollection(passToLasso, ax = widg.axes, collection = lassoPts)
+			print("The new lasso selector has been created")
+			print("From within masks2Contours.py, lassoSelector.passToLasso.sliceIndex = {}".format(lassoSelector.passToLasso.sliceIndex))
 
 			# This causes plot-with-interactive-lasso-selector to appear. When the user presses Enter,
-			# slice2ContoursPt2() is called by the callback function lassoSelector.keypress().
-			# This function removes points from RVFW_CS that were selected by the user.
-			widg.lasso = lassoSelector # Prevents lassoSelector from getting garbage collected
+			# the callback function lassoSelector.key_press() executes, and removes points from RVFW_CS
+			# that were lasso-selected by the user. lassoSelector.key_press() then calls slice2ContoursPt2().
+			widg.lasso = lassoSelector # Prevents lassoSelector from getting garbage collected.
 			mgr.win.createDock("MPL Widget", widg)
 			lassoSelector.parent_widg = mgr.win.dockWidgets[-1].parent() # dock widget contains `widg`, parent of that is dock itself
+			print("The new lasso selector has been hooked up")
 		else:
-			print("in the else case! ha")
+			print("inside the else case that executes when no lasso select is to be performed")
 			# Wrap up stuff we've computed so that it can be passed to slice2ContoursPt2().
 			pt2Data = SimpleNamespace(inputsHolder = inputsHolder, outputsHolder = outputsHolder, RVseptCS = RVseptCS, RVFW_CS = RVFW_CS, 
 			tmpRV_insertIndices = tmpRV_insertIndices, config = config, SA_LA = SA_LA, PyQt_objs = PyQt_objs, mainObjs = mainObjs)
 
 			slice2ContoursPt2(pt2Data = pt2Data, sliceIndex = sliceIndex, numLASlices = numLAslices)
 	else:
+		print("inside the else case that matches the \"if\" for \"#RV\"")
 		# Wrap up stuff we've computed so that it can be passed to slice2ContoursPt2().
 		pt2Data = SimpleNamespace(inputsHolder = inputsHolder, outputsHolder = outputsHolder, RVseptCS = RVseptCS, RVFW_CS = RVFW_CS, 
 			tmpRV_insertIndices = tmpRV_insertIndices, config = config, SA_LA = SA_LA, PyQt_objs = PyQt_objs, mainObjs = mainObjs)
@@ -268,8 +273,8 @@ def slice2ContoursPt2(pt2Data, sliceIndex, numLASlices):
 		RVepiSC = RVFW_CS - np.ceil(config.rvWallThickness / pt2Data.inputsHolder["pixSpacing"]) * RVEndoNormals \
 			if RVFW_CS.size != 0 and RVEndoNormals.size != 0 else np.array([])
 		contoursToImageCoords(RVepiSC, transform, sliceIndex, RVFWepiContours, "SA")
-
-	if SA_LA == "la":
+	else: # SA_LA == "la"
+		print("slice2ContoursPt2() called for LA")
 		if sliceIndex + 1 < numLASlices:
 			pt2Data.inputsHolder.sliceIndex += 1
 			slice2ContoursPt1(inputsHolder = pt2Data.inputsHolder, outputsHolder = pt2Data.outputsHolder,

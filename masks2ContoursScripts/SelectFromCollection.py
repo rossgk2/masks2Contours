@@ -43,7 +43,6 @@ class SelectFromCollection(object):
         self.alpha_other = alpha_other
         self.is_subtract = True
         self.pt2Data = None
-        self.sliceIndex = -1
 
         self.pts = collection.get_offsets()
         self.Npts = len(self.pts)
@@ -65,8 +64,13 @@ class SelectFromCollection(object):
         # Register the callback functions.
         self.fig.canvas.mpl_connect("key_press_event", self.key_press)
         self.fig.canvas.mpl_connect("key_release_event", self.key_release)
-        ax.set_title("Press enter to accept selected points.")
-
+        
+        title = '''Select points you would like to remove.\n
+            Hold down the left mouse button to use the lasso selector.\n
+            Hold Shift to unremove points.\n
+            Press Enter to confirm your selection.'''
+        ax.set_title(title)
+    
     def onselect(self, verts):
         path = Path(verts)
         self.ind = np.nonzero(path.contains_points(self.pts))[0]
@@ -91,9 +95,10 @@ class SelectFromCollection(object):
             self.is_subtract = False
         elif event.key == "enter":
             # Remove the points that were selected from the contour by the user.
+            print("key_press() has detected that Enter was pressed. lassoSelector.passToLasso.sliceIndex = {}".format(self.passToLasso.sliceIndex))
             pt2Data = self.passToLasso.pt2Data
-            print("shape: {}".format(pt2Data.RVFW_CS.shape))
-            print("ind: {}".format(self.ind))
+            print("RVFW_CS.shape: {}".format(pt2Data.RVFW_CS.shape))
+            print("lassoSelector.ind: {}".format(self.ind))
             pt2Data.RVFW_CS = ut.deleteHelper(pt2Data.RVFW_CS, self.ind, axis = 0)
             
             # Deconstruct the lasso selector.
