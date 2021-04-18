@@ -16,6 +16,12 @@ Here's the full 3D output for some sample data.
 
 <img src = "images/output.PNG" width = 500>
 
+## How to run the script
+
+1. Install [Eidolon](https://github.com/ericspod/Eidolon).
+2. Download this project, and then place the masks2ContoursScripts subdirectory from this project inside the Eidolon folder.
+3. Start Eidolon, click File -> Open Script, navigate to inside masks2ContoursScripts, and click on masks2ContoursEidolonScript.
+
 ## Differences between this Python port and the MATLAB original 
 
 In the MATLAB original, the function `masks2contoursSA_manual()` converted masks to contours for the short axis (SA) images, and the function `masks2contoursLA_manual()` converted masks to contours for the long axis (LA) images. These functions are replaced by `masks2ContoursSA()` and `masks2ContoursLA()` in the Python port.
