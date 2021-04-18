@@ -97,10 +97,7 @@ class SelectFromCollection(object):
             self.is_subtract = False
         elif event.key == "enter":
             # Remove the points that were selected from the contour by the user.
-            print("key_press() has detected that Enter was pressed. lassoSelector.passToLasso.sliceIndex = {}".format(self.passToLasso.sliceIndex))
             pt2Data = self.passToLasso.pt2Data
-            print("RVFW_CS.shape: {}".format(pt2Data.RVFW_CS.shape))
-            print("lassoSelector.ind: {}".format(self.ind))
             pt2Data.RVFW_CS = ut.deleteHelper(pt2Data.RVFW_CS, self.ind, axis = 0)
             
             # Deconstruct the lasso selector.
