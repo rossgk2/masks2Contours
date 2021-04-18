@@ -61,9 +61,9 @@ class SelectFromCollection(object):
         self.lasso = LassoSelector(ax, onselect=self.onselect)
         self.ind = []
 
-        # Register the callback functions.
-        self.fig.canvas.mpl_connect("key_press_event", self.key_press)
-        self.fig.canvas.mpl_connect("key_release_event", self.key_release)
+        # Register the callback functions and store the associated connection ID's.
+        self.press_cid = self.fig.canvas.mpl_connect("key_press_event", self.key_press)
+        self.release_cid = self.fig.canvas.mpl_connect("key_release_event", self.key_release)
         
         title = '''Select points you would like to remove.\n
             Hold down the left mouse button to use the lasso selector.\n
@@ -89,6 +89,8 @@ class SelectFromCollection(object):
         self.fc[:, -1] = 1
         self.collection.set_facecolors(self.fc)
         self.canvas.draw_idle()
+        self.canvas.mpl_disconnect(self.press_cid)
+        self.canvas.mpl_disconnect(self.release_cid)
 
     def key_press(self, event):
         if event.key == "shift":
