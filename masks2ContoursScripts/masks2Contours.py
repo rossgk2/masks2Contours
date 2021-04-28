@@ -503,7 +503,7 @@ def writeResults(frameNum, includedSlices, SAContours, SAinserts, LAContours, va
 	# Set up file writers.
 	try:
 		file1 = open(fldr + "GPFile_py.txt", "w", newline = "", encoding = "utf-8")
-		file2 = open(fldr + "Case1_FR1_py.txt", "w", newline = "", encoding = "utf-8")
+		file2 = open(fldr + "Case1_FR" + frameNum + "_py.txt", "w", newline = "", encoding = "utf-8")
 	except Exception as e:
 		print(e)
 		exit()
