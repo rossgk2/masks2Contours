@@ -7,9 +7,12 @@ from glob import glob
 import scipy.io as sio
 from scipy.spatial.distance import cdist
 
-# Return the point p1 in epiPts1 such that p1 minimizes the distance between p1 and p2, where p2 can be
-# any point in epiPts2.
 def calcApex(epiPts1, epiPts2):
+    '''
+    Return the point p1 in epiPts1 such that p1 minimizes the distance between p1 and p2, where p2 can be
+    any point in epiPts2.
+    '''
+    
     _epiPts1 = ut.removeZerorows(epiPts1)
     _epiPts2 = ut.removeZerorows(epiPts2)
     dist = cdist(_epiPts1, _epiPts2) # Compute pairwise distances.
@@ -19,15 +22,18 @@ def calcApex(epiPts1, epiPts2):
 
     return epiPts1[apexIndex, :]
 
-# fldr is the folder where the valve points .mat files are stored.
-# numFrames is the number of frames in the SA image.
-#
-# Returns the tuple (mv, tv, av, pv), where...
-# - mv is a 3D ndarray such that mv[i, :, :] is the 2D ndarray containing the mitral valve points for the ith mitral valve
-# file in fldr.
-# - tv, av, and pv are 2D ndarrays containing the tricuspid, aortic, and pulmonary valve points. tv, av, and pv may
-# all be None.
 def manuallyCompileValvePoints(fldr, numFrames, frameNum):
+    '''
+    fldr is the folder where the valve points .mat files are stored.
+    numFrames is the number of frames in the SA image.
+    
+    Returns the tuple (mv, tv, av, pv), where...
+    - mv is a 3D ndarray such that mv[i, :, :] is the 2D ndarray containing the mitral valve points for the ith mitral valve
+    file in fldr.
+    - tv, av, and pv are 2D ndarrays containing the tricuspid, aortic, and pulmonary valve points. tv, av, and pv may
+    all be None.
+    '''
+
     mat_filenames = glob(fldr + "valve-motion-predicted-LA_[0-9]CH.mat")
     mat_files = [sio.loadmat(file) for file in mat_filenames]
 
@@ -70,9 +76,12 @@ def manuallyCompileValvePoints(fldr, numFrames, frameNum):
 
     return (mv, tv, av, pv)
 
-# oldValvePts is a m x 2 ndarray, and newNumInterpSamples is a positive integer.
-# Returns the new, interpolated valve positions.
 def interpTime(oldValvePts, newNumInterpSamples):
+    '''
+    oldValvePts is a m x 2 ndarray, and newNumInterpSamples is a positive integer.
+    Returns the new, interpolated valve positions.
+    '''
+
     result = np.zeros((newNumInterpSamples, oldValvePts.shape[1], oldValvePts.shape[2]))
 
     for i in range(0, oldValvePts.shape[1]):

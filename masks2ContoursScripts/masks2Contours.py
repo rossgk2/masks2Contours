@@ -15,11 +15,13 @@ import MONAIutils
 import masks2ContoursUtil as ut
 from SelectFromCollection import SelectFromCollection
 
-# This class is used so that we can take advantage of its __getitem__() method:
-# we can use __getitem__() to access the segmentation coorresponding to "key" in a dictionary-ish fashion
-# ("key" could be "LVendo", "LVepi", etc.), regardless of whether that mask data is SA data or LA data.
-# (Note, if ih is an InputsHolder instance, then ih[key] is the same as __getitem__(ih, key).)
 class InputsHolder:
+	'''
+	This class is used so that we can take advantage of its __getitem__() method:
+	we can use __getitem__() to access the segmentation coorresponding to "key" in a dictionary-ish fashion
+	("key" could be "LVendo", "LVepi", etc.), regardless of whether that mask data is SA data or LA data.
+	(Note, if ih is an InputsHolder instance, then ih[key] is the same as __getitem__(ih, key).)
+	'''
 	def __init__(self, dict, sliceIndex, SA_LA):
 		self.SA_LA = str.lower(SA_LA)
 		self.sliceIndex = sliceIndex
@@ -37,8 +39,8 @@ class InputsHolder:
 		else: #SA_LA == "la"
 			return self.dict[key][self.sliceIndex]
 
-# Performs the masks2Contours process for the short axis segmentations.
 def masks2ContoursSA(segName, frameNum, config):
+	''' Performs the masks2Contours process for the short axis segmentations. '''
 	# Read the 3D segmentation, transform matrix, and other geometry info from the NIFTI file.
 	(seg, transform, pixSpacing) = readFromNIFTI(segName, frameNum)
 	numSlices = seg.shape[2]
@@ -102,8 +104,8 @@ def masks2ContoursSA(segName, frameNum, config):
 			"RVsept" : RVseptContours } ,
 			{"RVinserts" : RVinserts, "RVinsertsWeights" : RVinsertsWeights})
 
-# Performs the masks2Contours process for the long axis segmentations.
 def masks2ContoursLA(LA_segs, frameNum, numSlices, config, PyQt_objs, mainObjs):
+	''' Performs the masks2Contours process for the long axis segmentations. '''
 	# Precompute (more accurately, "pre-read") endoLV, epiLV, endoRV for each slice.
 	# Also precompute transform and pix_spacing for each slice.
 	(LVendoList, LVepiList, RVendoList, transformList, pixSpacingList) = ([], [], [], [], [])
@@ -135,31 +137,34 @@ def masks2ContoursLA(LA_segs, frameNum, numSlices, config, PyQt_objs, mainObjs):
 	slice2ContoursPt1(inputsHolder = inputsHolder, outputsHolder = outputsHolder, config = config, sliceIndex = 0,
 					  numLAslices = numSlices, SA_LA = "LA", PyQt_objs = PyQt_objs, mainObjs = mainObjs)
 
-# This function exectues the first half of the masks2Contours process and then calls slice2ContoursPt2().
-#
-# Here's how slice2ContoursPt1() and slice2ContoursPt2() work on a high level:
-#
-# slice2ContoursPt1() and slice2ContoursPt2() can collectively be considered to be a regular/normal/ordinary function 
-# when SA_LA == "sa". When SA_LA == "la", slice2ContoursPt1() and slice2ContoursPt2() collectively form a recursive function.
-#
-# More specifically...
-#
-# When SA_LA.lower() == "sa", slice2ContoursPt1() calls slice2ContoursPt2(), which, since SA_LA.lower() == "sa",
-# finishes *without* calling slice2ContoursPt1(). Since slice2ContoursPt1() and slice2ContoursPt2() collectively
-# form a regular ol' imperative function, it makes sense to call slice2ContoursPt1() in a for loop, as is done in
-# masks2ContoursSA().
-# 
-# When SA_LA.lower() == "la", slice2ContoursPt1() does the following:
-#
-# (1) if the current slice being examined has nontrivial data (i.e., is not empty),
-# a SelectFromCollection instance called lassoSelector is created, and control is passed to lassoSelector.key_press(). 
-# lassoSelector.key_press() then calls slice2ContoursPt2(). Since SA_LA.lower() == "la", slice2ContoursPt2() either calls
-# slice2ContoursPt1(), passing in the data for the next slice (this is the recursive bit), OR calls finishUp().
-#
-# (2) if the current slice being examined is trivial, no SelectFromCollection instance is created,
-# and slice2ContoursPt2() is called immediately. Since SA_LA.lower() == "la", slice2ContoursPt2() either calls
-# slice2ContoursPt1(), passing in the data for the next slice (this is the recursive bit), OR calls finishUp().
 def slice2ContoursPt1(inputsHolder, outputsHolder, config, sliceIndex, numLAslices, SA_LA, PyQt_objs, mainObjs):
+	'''
+	This function exectues the first half of the masks2Contours process and then calls slice2ContoursPt2().
+	
+	Here's how slice2ContoursPt1() and slice2ContoursPt2() work on a high level:
+	
+	slice2ContoursPt1() and slice2ContoursPt2() can collectively be considered to be a regular/normal/ordinary function 
+	when SA_LA == "sa". When SA_LA == "la", slice2ContoursPt1() and slice2ContoursPt2() collectively form a recursive function.
+	
+	More specifically...
+
+	When SA_LA.lower() == "sa", slice2ContoursPt1() calls slice2ContoursPt2(), which, since SA_LA.lower() == "sa",
+	finishes *without* calling slice2ContoursPt1(). Since slice2ContoursPt1() and slice2ContoursPt2() collectively
+	form a regular ol' imperative function, it makes sense to call slice2ContoursPt1() in a for loop, as is done in
+	masks2ContoursSA().
+
+	When SA_LA.lower() == "la", slice2ContoursPt1() does the following:
+
+	(1) if the current slice being examined has nontrivial data (i.e., is not empty),
+	a SelectFromCollection instance called lassoSelector is created, and control is passed to lassoSelector.key_press(). 
+	lassoSelector.key_press() then calls slice2ContoursPt2(). Since SA_LA.lower() == "la", slice2ContoursPt2() either calls
+	slice2ContoursPt1(), passing in the data for the next slice (this is the recursive bit), OR calls finishUp().
+
+	(2) if the current slice being examined is trivial, no SelectFromCollection instance is created,
+	and slice2ContoursPt2() is called immediately. Since SA_LA.lower() == "la", slice2ContoursPt2() either calls
+	slice2ContoursPt1(), passing in the data for the next slice (this is the recursive bit), OR calls finishUp().
+	'''
+	
 	# Check validity of SA_LA.
 	SA_LA = SA_LA.lower()
 	if not(SA_LA == "sa" or SA_LA == "la"):
@@ -263,6 +268,10 @@ def slice2ContoursPt1(inputsHolder, outputsHolder, config, sliceIndex, numLAslic
 		slice2ContoursPt2(pt2Data = pt2Data, sliceIndex = sliceIndex, numLASlices = numLAslices)
 
 def slice2ContoursPt2(pt2Data, sliceIndex, numLASlices):
+	'''
+	This function exectues the first half of the masks2Contours process and then calls slice2ContoursPt2().
+	See the docstring for slice2ContoursPt1() for an overview of how this function interacts with slice2ContoursPt1().
+	'''
 	# Unpack pt2Data.
 	transform = pt2Data.inputsHolder["transform"]
 	LVendoContours = pt2Data.outputsHolder.LVendoContours
@@ -306,8 +315,8 @@ def slice2ContoursPt2(pt2Data, sliceIndex, numLASlices):
 			finishUp(SAresults = mainObjs.SAresults, LAcontours = LAcontours, frameNum = mainObjs.frameNum,
 					 fldr = mainObjs.fldr, imgName = mainObjs.imgName)
 
-# Helper function for converting contours to an image coordinate system. This function writes to "contours".
 def contoursToImageCoords(maskSlice, transform, sliceIndex, contours, SA_LA):
+	''' Helper function for converting contours to an image coordinate system. This function writes to "contours". '''
 	SA_LA = SA_LA.lower()
 	if SA_LA == "sa":
 		thirdComp = sliceIndex
@@ -326,10 +335,10 @@ def contoursToImageCoords(maskSlice, transform, sliceIndex, contours, SA_LA):
 		tmp = transform @ np.append(pts, 1)
 		contours[i, :, sliceIndex] = tmp[0:3]
 
-# Helper function.
-# "contours" is an m1 x 2 ndarray for some m1.
-# Returns an m2 x 2 ndarray that is the result of cleaning up "contours".
 def cleanContours(contours, downsample):
+	''' Helper function that returns an m1 x 2 ndarray, for some m1, that is the result of cleaning up "contours".
+	"contours" is an m2 x 2 ndarray for some m1.
+	'''
 	if contours.shape[0] == 0:
 		return np.array([])
 
@@ -344,21 +353,23 @@ def cleanContours(contours, downsample):
 	# Remove points in the contours that are too far from the majority of the contour. (This probably happens due to holes in segmentation).
 	return ut.removeFarPoints(contours)
 
-# Helper struct for passing arguments to subplotHelperMulti().
 class PlotSettings:
+	'''
+	Helper struct for passing arguments to subplotHelperMulti().
+	'''
 	def __init__(self, maskSlice, contours, color):
 		self.maskSlice = maskSlice
 		self.contours = contours
 		self.color = color
 
-# Helper function for plotting points from different datasets on the same plot.
 def subplotHelperMulti(ax, plotSettingsList, title):
+	'''  Helper function for plotting points from different datasets on the same plot. '''
 	ax.clear()  # The way that the timing of ax.clear() is handled (with the "clear = False" default arg to subplotHelper()) is somewhat messy, and can probably be improved somehow.
 	for ps in plotSettingsList:
 		subplotHelper(ax = ax, title = title, maskSlice = ps.maskSlice, contours = ps.contours, color = ps.color, clear = False)
 
-# Helper function for creating subplots.
 def subplotHelper(ax, title, maskSlice, contours, color, size = .5, clear = True):
+	''' Helper function for creating subplots. '''
 	if clear:
 		ax.clear()
 
@@ -368,15 +379,14 @@ def subplotHelper(ax, title, maskSlice, contours, color, size = .5, clear = True
 	# Scatterplot. "s" is the size of the points in the scatterplot.
 	return ax.scatter(x = contours[:, 0], y = contours[:, 1], s = size, c = color) # Most uses of this function will not make use of the output returned.
 
-# Helper function used by masks2ContoursSA() and masks2ContoursLA().
-# Returns (seg, transform, pixSpacing).
 def readFromNIFTI(segName, frameNum):
+	''' Helper function used by masks2ContoursSA() and masks2ContoursLA(). Returns (seg, transform, pixSpacing). '''
 	# Load NIFTI image and its header.
 	img = nib.load(segName)
 	img = MONAIutils.correct_nifti_header_if_necessary(img)
 	hdr = img.header
 
-   # Get the segmentation from the NIFTI file.
+    # Get the segmentation from the NIFTI file.
 	seg = img.get_fdata()
 	if seg.ndim > 3:  # if segmentation includes all time points
 		seg = seg[:, :, :, frameNum].squeeze()
@@ -393,9 +403,12 @@ def readFromNIFTI(segName, frameNum):
 
 	return (seg, transform, pixSpacing)
 
-# maskSlice is a 2D ndarray, i.e it is a m x n ndarray for some m, n. This function returns a m x 2 ndarray, where
-# each row in the array represents a point in the contour around maskSlice.
 def getContoursFromMask(maskSlice, irregMaxSize):
+	'''
+	maskSlice is a 2D ndarray, i.e it is a m x n ndarray for some m, n. This function returns a m x 2 ndarray, where
+	each row in the array represents a point in the contour around maskSlice.
+	'''
+
 	# First, clean the mask.
 
 	# Remove irregularites with fewer than irregMaxSize pixels.Note, the "min_size" parameter to this function is
@@ -425,6 +438,9 @@ def getContoursFromMask(maskSlice, irregMaxSize):
 	return np.vstack(lst) if not len(lst) == 0 else np.array([])
 
 
+#########################################################################################
+# Below are functions that are not really related to the masks2Contours process, but
+# instead are used to process the data that the masks2Contours process produces.
 #########################################################################################
 
 def finishUp(SAresults, LAcontours, frameNum, fldr, imgName):

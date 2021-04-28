@@ -11,7 +11,8 @@ import masks2ContoursUtil as ut
 import masks2Contours
 
 class SelectFromCollection(object):
-    """Select indices from a matplotlib collection using `LassoSelector`.
+    '''
+    Select indices from a matplotlib collection using `LassoSelector`.
 
     Selected indices are saved in the `ind` attribute. This tool fades out the
     points that are not part of the selection (i.e., reduces their alpha
@@ -32,7 +33,7 @@ class SelectFromCollection(object):
     alpha_other : 0 <= float <= 1
         To highlight a selection, this tool sets all selected points to an
         alpha value of 1 and non-selected points to `alpha_other`.
-    """
+    '''
 
     def __init__(self, passToLasso, ax, collection, alpha_other=0.3):
         self.passToLasso = passToLasso
