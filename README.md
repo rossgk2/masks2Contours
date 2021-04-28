@@ -6,7 +6,7 @@ This is a Python port of MATLAB code for a joint University of Michigan and King
 
 "3D selections" are more commonly called "3D masks"- that is why this program is called `masks2Contours`.
 
-The Python port improves upon the organization of the MATLAB code, and is integrated within the GUI of Eric Kerfoot's [Eidolon](https://github.com/ericspod/Eidolon). Dr. Renee Miller of King's College London wrote the MATLAB code, and I am the author of this Python port.
+The Python port improves upon the organization of the MATLAB code, and is integrated within the GUI [Eidolon](https://github.com/ericspod/Eidolon), a program written by Dr. Eric Kerfoot of King's College London. Dr. Renee Miller, also from King's College, wrote the MATLAB code, and I am the author of this Python port.
 
 This is the Eidolon interface the user uses to select the NIFTI files that should be the input to the masks2Contours program.
 
