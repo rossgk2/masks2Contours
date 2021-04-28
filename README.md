@@ -16,7 +16,7 @@ After the user starts masks2Contours (File -> Open Script), they use this interf
 
 <img src = "images/lassoSelector.PNG" width = 300>
 
-Here's the full 3D output for some sample data.
+In the above, the user clicks and drags to lasso select points. Here's the full 3D output for some sample data.
 
 <img src = "images/output.PNG" width = 500>
 
