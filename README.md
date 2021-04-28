@@ -84,6 +84,10 @@ def masks2ContoursSA():
     slice2ContoursPt1(s, SA_LA_ = "sa")
 ```
 
+Here's a diagram that summarizes the logic of the entire program:
+
+<img src = "images/processDiagram.PNG" width = 500>
+
 You might ask, why not have an regular function `slice2ContoursSA()` that gets looped over, and then have two functions `slice2ContoursLAPt1()` and `slice2ContoursLAPt2()` that are "collectively recursive"? Wouldn't this be more readable?
 
 It might be more readable in some ways. In my opinion, there are enough tasks executed each slice that are common to the short and long axes, both in "part 1" and "part 2", for this more complicated approach to be well worth it.
