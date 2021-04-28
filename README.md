@@ -30,6 +30,8 @@ In the above, the user clicks and drags to lasso select points. Here's the full 
 
 In the MATLAB original, the function `masks2contoursSA_manual()` converted masks to contours for the short axis (SA) images, and the function `masks2contoursLA_manual()` converted masks to contours for the long axis (LA) images. These functions are replaced by `masks2ContoursSA()` and `masks2ContoursLA()` in the Python port.
 
+### The Python port abstracts the process of converting a segmentation *slice* to contours
+
 The Python port is more abstracted than the MATLAB original. In the MATLAB code, `masks2contoursSA_manual()` and `masks2contoursLA_manual()` performed very similar sequences of tasks; this shared behaivor was not made obvious by a common dependency on a helper function, however. In the Python port, `masks2ContoursSA()` and `masks2ContoursLA()` do depend on a common helper function.
 
 To understand precisely what `masks2ContoursSA()` and `masks2ContoursLA()` have in common, we must know that each 2D slice of the short axis 3D image has the same geometry metadata, while each long axis 2D image has different geometry metadata. Since "same geometry metadata in each slice" is a special case of "varying geometry metadata in each slice", we can use the following pseudocode for our program:
