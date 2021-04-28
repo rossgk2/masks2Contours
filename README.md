@@ -10,7 +10,7 @@ The Python port improves upon the organization of the MATLAB code, and is integr
 
 This is the Eidolon interface the user uses to select the NIFTI files that should be the input to the masks2Contours program.
 
-<img src = "images/fileSelect.PNG" width = 300>
+<img src = "images/fileSelect.PNG" width = 500>
 
 After the user starts masks2Contours (File -> Open Script), they use this interface to remove undesired points from nonempty slices in the long axis segmentation:
 
