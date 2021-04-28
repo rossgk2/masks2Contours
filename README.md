@@ -32,7 +32,7 @@ In the MATLAB original, the function `masks2contoursSA_manual()` converted masks
 
 ### The Python port abstracts the process of converting a segmentation *slice* to contours
 
-The Python port is more abstracted than the MATLAB original. In the MATLAB code, `masks2contoursSA_manual()` and `masks2contoursLA_manual()` performed very similar sequences of tasks; this shared behaivor was not made obvious by a common dependency on a helper function, however. In the Python port, `masks2ContoursSA()` and `masks2ContoursLA()` do depend on a common helper function.
+The Python port is more abstracted than the MATLAB original. In the MATLAB code, though `masks2contoursSA_manual()` and `masks2contoursLA_manual()` performed very similar sequences of tasks, this shared behaivor was not made obvious by a common dependency on a helper function. In the Python port, `masks2ContoursSA()` and `masks2ContoursLA()` do depend on a common helper function.
 
 To understand precisely what `masks2ContoursSA()` and `masks2ContoursLA()` have in common, we must know that each 2D slice of the short axis 3D image has the same geometry metadata, while each long axis 2D image has different geometry metadata. Since "same geometry metadata in each slice" is a special case of "varying geometry metadata in each slice", we can use the following pseudocode for our program:
 
@@ -50,7 +50,47 @@ def masks2ContoursLA():
 
 Notice that in this pseudocode, `masks2ContoursSA()` and `masks2ContoursLA()` depend on the common helper function `slice2Contours()`.
 
+### Iterative when `SA_LA.lower() == "sa"`, recursive when `SA_LA.lower() == "la"`
 
+Since the Eidolon GUI runs on one thread and the Python script on another, we can't return control from the lasso selector back to the function which created the lasso selector by waiting; if we want some function `f` to execute after the lasso selector is done doing its thing, we must explicitly call `f` from within one of the lasso selector's callback functions.
+
+This means that, when processing the long axis segmentation, we have to split up the `slice2Contours()` process into a `slice2ContoursPt1()` process and a `slice2ContoursPt2()` process. For reasons explained soon, we will actually split up the `slice2Contours()` process into a `slice2ContoursPt1(SA_LA = "la")` process and a `slice2ContoursPt2(SA_LA = "la")` process. 
+
+The `masks2ContoursLA()` function proceeds as follows:
+
+```
+def masks2ContoursLA():
+  slice2ContoursPt1(SA_LA_ = "la")
+  
+def slice2ContoursPt1(SA_LA):
+  execute some tasks
+  if SA_LA == "la":
+    set up a lasso selector if necessary (if not, call slice2ContoursPt2()).
+    # the lasso selector responds to user input, and then calls slice2ContoursPt2()
+
+def slice2ContoursPt2(SA_LA):
+  execute some more tasks
+  if SA_LA == "la":
+    call slice2ContoursPt1() if the slice just processed was not the last; call finishUp() otherwise
+```
+
+Note, the `slice2Contours(SA_LA = "la")` process is recursive, since `slice2ContoursPt1(SA_LA = "la")` and `slice2ContoursPt2(SA_LA = "la")` call each other. 
+
+Now, we explain why we have parameterzied `slice2ContoursPt1()` and `slice2ContoursPt2()` by `SA_LA`. The intention of this is to allow `slice2ContoursPt1(SA_LA = "la")` and `slice2ContoursPt2(SA_LA = "la")` to "collectively" constitue a recursive function, while having `slice2ContoursPt1(SA_LA = "sa")` and `slice2ContoursPt2(SA_LA = "sa")` collectively constitute a traditional imperative function that can be looped over, like this:
+
+```
+def masks2ContoursSA():
+  for each short axis slice s:
+    slice2ContoursPt1(s, SA_LA_ = "sa")
+```
+
+n port, we need some way of returning control from the lasso selector that is used to interact with slices of the long axis segmentation. Unfortunately, since the Python `masks2Contours` script is integrated with a GUI, we can't just wait for control to return to whatever function set up the lasso selector
+
+Since the Python port of masks2Contours is integrated into a GUI framework, it needs to be able to run asynchronously.
+
+complicates things a little bit
+
+This means that we *cannot* return control from the lasso selector 
 
 It may be a little confusing that that helper function which `masks2ContoursSA()` and `masks2ContoursLA()` depend on is `slice2ContoursPt1()'.
 
