@@ -58,6 +58,8 @@ def masks2ContoursSA(segName, frameNum, config):
 	RVinserts = np.zeros([2, 3, numSlices])
 
 	# Loop over slices and get contours one slice at a time.
+	# (See the comment above slice2ContoursPt1() for why slice2ContoursPt1() is looped over here, and why it is
+	# called in a recursive fashion in masks2ContoursLA()).
 	for i in range(0, numSlices):
 		# Note that transform and pixSpacing are the same in every iteration.
 		inputsHolder = InputsHolder(dict = {"LVendo" : LVendo[:, :, i], "LVepi" : LVepi[:, :, i], "RVendo" : RVendo[:, :, i],
@@ -74,7 +76,6 @@ def masks2ContoursSA(segName, frameNum, config):
 	# Loop through anterior (1) and posterior (2) sides for fitting a line.
 	RVinsertsWeights = np.zeros((2, numSlices)) # This will store errors.
 	for i in range(0, 2):
-
 		# In the MATLAB script, the following step essentially amounted to horizontally stacking _inserts1^T and _inserts2^T. (^T is matrix transpose).
 		# Since transposing a 1 x n ndarray produces a 1 x n ndarray, rather than a n x 1 ndarray (this happens because numpy
 		# tries to make matrix transposition more efficent, since tranposition is a very predictable shuffle of old data)
@@ -123,6 +124,8 @@ def masks2ContoursLA(LA_segs, frameNum, numSlices, config, PyQt_objs, mainObjs):
 	RVseptContours = np.zeros([ub, 3, numSlices])
 
 	# Recurse over slices and get contours one slice at a time.
+	# (See the comment above slice2ContoursPt1() for why slice2ContoursPt1() is called in a recursive fashion
+	# here and is looped over in masks2ContoursSA()).
 	inputsHolder = InputsHolder(dict = {"LVendo" : LVendoList, "LVepi" : LVepiList, "RVendo" : RVendoList,
 										"transform": transformList, "pixSpacing" : pixSpacingList},
 								sliceIndex = 0, SA_LA = "LA")
@@ -132,6 +135,30 @@ def masks2ContoursLA(LA_segs, frameNum, numSlices, config, PyQt_objs, mainObjs):
 	slice2ContoursPt1(inputsHolder = inputsHolder, outputsHolder = outputsHolder, config = config, sliceIndex = 0,
 					  numLAslices = numSlices, SA_LA = "LA", PyQt_objs = PyQt_objs, mainObjs = mainObjs)
 
+# This function exectues the first half of the masks2Contours process and then calls slice2ContoursPt2().
+#
+# Here's how slice2ContoursPt1() and slice2ContoursPt2() work on a high level:
+#
+# slice2ContoursPt1() and slice2ContoursPt2() can collectively be considered to be a regular/normal/ordinary function 
+# when SA_LA == "sa". When SA_LA == "la", slice2ContoursPt1() and slice2ContoursPt2() collectively form a recursive function.
+#
+# More specifically...
+#
+# When SA_LA.lower() == "sa", slice2ContoursPt1() calls slice2ContoursPt2(), which, since SA_LA.lower() == "sa",
+# finishes *without* calling slice2ContoursPt1(). Since slice2ContoursPt1() and slice2ContoursPt2() collectively
+# form a regular ol' imperative function, it makes sense to call slice2ContoursPt1() in a for loop, as is done in
+# masks2ContoursSA().
+# 
+# When SA_LA.lower() == "la", slice2ContoursPt1() does the following:
+#
+# (1) if the current slice being examined has nontrivial data (i.e., is not empty),
+# a SelectFromCollection instance called lassoSelector is created, and control is passed to lassoSelector.key_press(). 
+# lassoSelector.key_press() then calls slice2ContoursPt2(). Since SA_LA.lower() == "la", slice2ContoursPt2() either calls
+# slice2ContoursPt1(), passing in the data for the next slice (this is the recursive bit), OR calls finishUp().
+#
+# (2) if the current slice being examined is trivial, no SelectFromCollection instance is created,
+# and slice2ContoursPt2() is called immediately. Since SA_LA.lower() == "la", slice2ContoursPt2() either calls
+# slice2ContoursPt1(), passing in the data for the next slice (this is the recursive bit), OR calls finishUp().
 def slice2ContoursPt1(inputsHolder, outputsHolder, config, sliceIndex, numLAslices, SA_LA, PyQt_objs, mainObjs):
 	# Check validity of SA_LA.
 	SA_LA = SA_LA.lower()

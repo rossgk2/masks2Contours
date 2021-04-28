@@ -1,6 +1,6 @@
 from eidolon import *
 from masks2ContoursScripts import masks2ContoursMain
-mgr:SceneManager=getSceneMgr()  # not needed but sorts out IDE variable resolution
+mgr:SceneManager = getSceneMgr() # Not needed but sorts out IDE variable resolution
 
 import sys
 import os.path
