@@ -30,7 +30,33 @@ In the above, the user clicks and drags to lasso select points. Here's the full 
 
 In the MATLAB original, the function `masks2contoursSA_manual()` converted masks to contours for the short axis (SA) images, and the function `masks2contoursLA_manual()` converted masks to contours for the long axis (LA) images. These functions are replaced by `masks2ContoursSA()` and `masks2ContoursLA()` in the Python port.
 
-The Python port is more abstracted than the MATLAB original. **Before the commits on Jan. 11, 2021**, the Python port mostly mirrored the MATLAB code, with the main differences being that the Python code had the following abstractions:
+The Python port is more abstracted than the MATLAB original. In the MATLAB code, `masks2contoursSA_manual()` and `masks2contoursLA_manual()` performed very similar sequences of tasks; this shared behaivor was not made obvious by a common dependency on a helper function, however. In the Python port, `masks2ContoursSA()` and `masks2ContoursLA()` do depend on a common helper function.
+
+To understand precisely what `masks2ContoursSA()` and `masks2ContoursLA()` have in common, we must know that each 2D slice of the short axis 3D image has the same geometry metadata, while each long axis 2D image has different geometry metadata. Since "same geometry metadata in each slice" is a special case of "varying geometry metadata in each slice", we can use the following pseudocode for our program:
+
+```
+def masks2ContoursSA():
+  geometryMetadata = getGeometryMetadataSA()
+  for each short axis slice s:
+    slice2Contours(geometryMetadata) # geometryMetadata is the same each iteration
+    
+def masks2ContoursLA():
+  for each long axis slice s:
+    geometryMetadata = getGeometryMetadataLA(s) 
+    slice2Contours(geometryMetadata) # geometryMetadata depends on the long axis slice, s
+```
+
+Notice that in this pseudocode, `masks2ContoursSA()` and `masks2ContoursLA()` depend on the common helper function `slice2Contours()`.
+
+
+
+It may be a little confusing that that helper function which `masks2ContoursSA()` and `masks2ContoursLA()` depend on is `slice2ContoursPt1()'.
+
+
+
+
+
+**Before the commits on Jan. 11, 2021**, the Python port mostly mirrored the MATLAB code, with the main differences being that the Python code had the following abstractions:
 - plotting functions (`subplotHelper` and `subplotHelperMulti`)
 - a function for cleaning a mask and a function for getting contours from a mask slice
 - a function to read from NIFTI files
