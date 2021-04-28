@@ -84,34 +84,6 @@ def masks2ContoursSA():
     slice2ContoursPt1(s, SA_LA_ = "sa")
 ```
 
-n port, we need some way of returning control from the lasso selector that is used to interact with slices of the long axis segmentation. Unfortunately, since the Python `masks2Contours` script is integrated with a GUI, we can't just wait for control to return to whatever function set up the lasso selector
+You might ask, why not have an regular function `slice2ContoursSA()` that gets looped over, and then have two functions `slice2ContoursLAPt1()` and `slice2ContoursLAPt2()` that are "collectively recursive"? Wouldn't this be more readable?
 
-Since the Python port of masks2Contours is integrated into a GUI framework, it needs to be able to run asynchronously.
-
-complicates things a little bit
-
-This means that we *cannot* return control from the lasso selector 
-
-It may be a little confusing that that helper function which `masks2ContoursSA()` and `masks2ContoursLA()` depend on is `slice2ContoursPt1()'.
-
-
-
-
-
-**Before the commits on Jan. 11, 2021**, the Python port mostly mirrored the MATLAB code, with the main differences being that the Python code had the following abstractions:
-- plotting functions (`subplotHelper` and `subplotHelperMulti`)
-- a function for cleaning a mask and a function for getting contours from a mask slice
-- a function to read from NIFTI files
-- a function for converting to image coordinates
-
-The Python port also has the significant difference (at least in the `oo_plotting` branch, which is the default branch) that it uses `matplotlib`'s object oriented plotting interface instead of its state-based interface.
-
-**A major change was implemented in the commits on Jan. 11, 2021.** That change is that the `masks2ContoursSA()` and `masks2ContoursLA()` functions now both rely on the `slice2Contours()` function, and are therefore much simpler and shorter. In the MATLAB code, `masks2ContoursSA()` and `masks2ContoursLA()` did not call a common function.
-
-Here is an overview of how `masks2ContoursSA()` and `masks2ContoursLA()` work. In general, a 3D image for the short axis (SA) is stored in a single file, while multiple 2D long axis (LA) images taken from different angles are stored in multiple files. The main difference between the short axis and the long axis is that *each 2D slice of the short axis 3D image has the same geometry metadata, while each long axis 2D image has different geometry metadata*. We can ignore this difference by pretending that each 2D slice of the short axis 3D image has varying geometry metadata- we just input the same metadata every iteration! So:
-
-- In both `masks2ContoursSA()` and `masks2ContoursLA()`, we loop over 2D images and call `slice2Contours()` each iteration. 
-- In `masks2ContoursSA()`, the 2D images are the 2D slices of a 3D short axis image.
-- In `masks2ContoursLA()`, the 2D images come from the several long axis 2D image files (each of which is a snapshot taken from a different angle).
-- In `masks2ContoursSA()`, the same geometry metadata is plugged into `slice2Contours()` in every iteration of the loop.
-- In `masks2ContoursLA()`, all geometry metadata is precomputed before the loop over the 2D images. In the loop over 2D images, geometry metadata that changes with each 2D image is plugged into `slice2Contours()`.
+It might be more readable in some ways. In my opinion, there are enough tasks executed each slice that are common to the short and long axes, both in "part 1" and "part 2", for this more complicated approach to be well worth it.
