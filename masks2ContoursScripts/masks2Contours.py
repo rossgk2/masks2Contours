@@ -15,6 +15,10 @@ import MONAIutils
 import masks2ContoursUtil as ut
 from SelectFromCollection import SelectFromCollection
 
+# This class is used so that we can take advantage of its __getitem__() method:
+# we can use __getitem__() to access the segmentation coorresponding to "key" in a dictionary-ish fashion
+# ("key" could be "LVendo", "LVepi", etc.), regardless of whether that mask data is SA data or LA data.
+# (Note, if ih is an InputsHolder instance, then ih[key] is the same as __getitem__(ih, key).)
 class InputsHolder:
 	def __init__(self, dict, sliceIndex, SA_LA):
 		self.SA_LA = str.lower(SA_LA)
@@ -33,6 +37,7 @@ class InputsHolder:
 		else: #SA_LA == "la"
 			return self.dict[key][self.sliceIndex]
 
+# Performs the masks2Contours process for the short axis segmentations.
 def masks2ContoursSA(segName, frameNum, config):
 	# Read the 3D segmentation, transform matrix, and other geometry info from the NIFTI file.
 	(seg, transform, pixSpacing) = readFromNIFTI(segName, frameNum)
@@ -96,6 +101,7 @@ def masks2ContoursSA(segName, frameNum, config):
 			"RVsept" : RVseptContours } ,
 			{"RVinserts" : RVinserts, "RVinsertsWeights" : RVinsertsWeights})
 
+# Performs the masks2Contours process for the long axis segmentations.
 def masks2ContoursLA(LA_segs, frameNum, numSlices, config, PyQt_objs, mainObjs):
 	# Precompute (more accurately, "pre-read") endoLV, epiLV, endoRV for each slice.
 	# Also precompute transform and pix_spacing for each slice.
@@ -503,7 +509,7 @@ def writeResults(frameNum, includedSlices, SAContours, SAinserts, LAContours, va
 	# Set up file writers.
 	try:
 		file1 = open(fldr + "GPFile_py.txt", "w", newline = "", encoding = "utf-8")
-		file2 = open(fldr + "Case1_FR" + frameNum + "_py.txt", "w", newline = "", encoding = "utf-8")
+		file2 = open(fldr + "Case1_FR" + str(frameNum) + "_py.txt", "w", newline = "", encoding = "utf-8")
 	except Exception as e:
 		print(e)
 		exit()
