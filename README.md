@@ -84,11 +84,11 @@ def masks2ContoursSA():
     slice2ContoursPt1(s, SA_LA_ = "sa")
 ```
 
-Here's a diagram that summarizes the logic of the entire program:
+Here's a diagram that summarizes the dependencies between the important functions of `masks2Contours`:
 
 <img src = "images/processDiagram.png" width = 1000>
 
-(The one thing the diagram leaves out is that `slice2Contours(SA_LA = "sa")` is used within a for loop).
+(The diagram does not include the fact that `slice2Contours(SA_LA = "sa")` is used within a for loop).
 
 You might ask, why not have a "regular" function `slice2ContoursSA()` that gets looped over, and then have two functions `slice2ContoursLAPt1()` and `slice2ContoursLAPt2()` that are "collectively recursive"? Wouldn't this be more readable?
 
