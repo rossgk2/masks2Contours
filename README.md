@@ -86,7 +86,7 @@ def masks2ContoursSA():
 
 Here's a diagram that summarizes the logic of the entire program:
 
-<img src = "images/processDiagram.png" width = 500>
+<img src = "images/processDiagram.png" width = 1000>
 
 You might ask, why not have an regular function `slice2ContoursSA()` that gets looped over, and then have two functions `slice2ContoursLAPt1()` and `slice2ContoursLAPt2()` that are "collectively recursive"? Wouldn't this be more readable?
 
