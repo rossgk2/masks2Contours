@@ -12,7 +12,7 @@ This is the Eidolon interface the user uses to select the NIFTI files that shoul
 
 <img src = "images/fileSelect.PNG" width = 500>
 
-After the user starts masks2Contours (File -> Open Script), they use this interface to remove undesired points from nonempty slices in the long axis segmentation:
+After the user starts masks2Contours (`File` -> `Open Script`), they use this interface to remove undesired points from nonempty slices in the long axis segmentation:
 
 <img src = "images/lassoSelector.PNG" width = 300>
 
@@ -24,7 +24,7 @@ In the above, the user clicks and drags to lasso select points. Here's the full 
 
 1. Install [Eidolon](https://github.com/ericspod/Eidolon).
 2. Download this project, and then place the masks2ContoursScripts subdirectory from this project inside the Eidolon folder.
-3. Start Eidolon, click File -> Open Script, navigate to inside masks2ContoursScripts, and click on masks2ContoursEidolonScript.
+3. Start Eidolon, click `File` -> `Open Script`, navigate to inside masks2ContoursScripts, and click on `masks2ContoursEidolonScript`.
 
 ## Differences between this Python port and the MATLAB original 
 
