@@ -534,9 +534,9 @@ def plotResults(includedSlices, SAContours, SAinserts, LAContours, valves, apex)
 
 		ax.scatter(LVendo[:, 0], LVendo[:, 1], LVendo[:, 2], marker = ".", color = "green")
 		ax.scatter(LVepi[:, 0], LVepi[:, 1], LVepi[:, 2], marker = ".", color = "blue")
-		ax.scatter(RVFWendo[:, 0], RVFWendo[:, 1], RVFWendo[:, 2], marker = "d", s = 30, color = "red") #using s = 30 for debug
+		ax.scatter(RVFWendo[:, 0], RVFWendo[:, 1], RVFWendo[:, 2], marker = ".", s = 30, color = "red") #using s = 30 for debug
 		ax.scatter(RVFWepi[:, 0], RVFWepi[:, 1], RVFWepi[:, 2], marker = ".", color = "blue")
-		ax.scatter(RVsept[:, 0], RVsept[:, 1], RVsept[:, 2], marker = "x", color = "yellow")
+		ax.scatter(RVsept[:, 0], RVsept[:, 1], RVsept[:, 2], marker = ".", color = "yellow")
 
 	ax.view_init()
 	ax.legend((h0, h1, h2, h3, h4, h5, h6, h7, h8, h9),
