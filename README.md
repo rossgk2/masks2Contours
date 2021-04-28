@@ -2,15 +2,19 @@
 
 ## Summary
 
-This is a Python port of MATLAB code for a joint University of Michigan and King's College London research group. The MATLAB code took 3D selections as input (typically, we are interested in selecting the 3D geometry of a human heart) and produced contour points of those selections as output. The output contour points are also labeled according which chamber in the heart they reside in. This Python port tries to improve upon the organization of the MATLAB code.
+This is a Python port of MATLAB code for a joint University of Michigan and King's College London research group. The MATLAB code took 3D selections as input (typically, we are interested in selecting the 3D geometry of a human heart) and produced contour points of those selections as output. The output contour points are also labeled according which chamber in the heart they reside in. 
 
 "3D selections" are more commonly called "3D masks"- that is why this program is called `masks2Contours`.
 
-Dr. Renee Miller of King's College London wrote the MATLAB code, and I am the author of the Python port.
+The Python port improves upon the organization of the MATLAB code, and is integrated within the GUI of Eric Kerfoot's [Eidolon](https://github.com/ericspod/Eidolon). Dr. Renee Miller of King's College London wrote the MATLAB code, and I am the author of this Python port.
 
-Here's the interface the user uses to manually check the output slice by slice.
+This is the Eidolon interface the user uses to select the NIFTI files that should be the input to the masks2Contours program.
 
-<img src = "images/SA.PNG" width = 300>
+<img src = "images/fileSelect.PNG" width = 300>
+
+After the user starts masks2Contours (File -> Open Script), they use this interface to remove undesired points from nonempty slices in the long axis segmentation:
+
+<img src = "images/lassoSelector.PNG" width = 300>
 
 Here's the full 3D output for some sample data.
 
