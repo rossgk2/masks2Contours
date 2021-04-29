@@ -62,7 +62,7 @@ Since the Eidolon GUI runs on one thread and the Python script on another, we ca
 
 This means that, when processing the long axis segmentation, we have to split up the `slice2Contours()` process into a `slice2ContoursPt1()` process and a `slice2ContoursPt2()` process, where `slice2ContoursPt1()` calls `slice2ContoursPt2()`. For reasons explained soon, we will actually split up the `slice2Contours()` process into a `slice2ContoursPt1(SA_LA = "la")` process and a `slice2ContoursPt2(SA_LA = "la")` process, where `slice2ContoursPt1(SA_LA = "la")` calls `slice2ContoursPt2(SA_LA = "la")`. 
 
-The `masks2ContoursLA()` function proceeds as follows:
+The `masks2ContoursLA()` function thus proceeds as follows:
 
 ```
 def masks2ContoursLA():
