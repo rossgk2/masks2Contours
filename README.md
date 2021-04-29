@@ -80,7 +80,7 @@ def slice2ContoursPt2(SA_LA):
     call slice2ContoursPt1() if the slice just processed was not the last; call finishUp() otherwise
 ```
 
-Note, the `slice2Contours(SA_LA = "la")` process is recursive, since `slice2ContoursPt1(SA_LA = "la")` and `slice2ContoursPt2(SA_LA = "la")` call each other. 
+Note, the `masks2ContoursLA()` process is recursive, since `slice2ContoursPt1(SA_LA = "la")` and `slice2ContoursPt2(SA_LA = "la")` call each other. 
 
 Now, we explain why we have parameterzied `slice2ContoursPt1()` and `slice2ContoursPt2()` by `SA_LA`. The intention of this is to allow `slice2ContoursPt1(SA_LA = "la")` and `slice2ContoursPt2(SA_LA = "la")` to "collectively" constitue a recursive function, while having `slice2ContoursPt1(SA_LA = "sa")` and `slice2ContoursPt2(SA_LA = "sa")` collectively constitute a traditional imperative function that can be looped over, like this:
 
