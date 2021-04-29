@@ -60,7 +60,7 @@ Notice that in this pseudocode, `masks2ContoursSA()` and `masks2ContoursLA()` de
 
 Since the Eidolon GUI runs on one thread and the Python script on another, we can't return control from the lasso selector back to the function which created the lasso selector by waiting; if we want some function `f` to execute after the lasso selector is done doing its thing, we must explicitly call `f` from within one of the lasso selector's callback functions.
 
-This means that, when processing the long axis segmentation, we have to split up the `slice2Contours()` process into a `slice2ContoursPt1()` process and a `slice2ContoursPt2()` process. For reasons explained soon, we will actually split up the `slice2Contours()` process into a `slice2ContoursPt1(SA_LA = "la")` process and a `slice2ContoursPt2(SA_LA = "la")` process. 
+This means that, when processing the long axis segmentation, we have to split up the `slice2Contours()` process into a `slice2ContoursPt1()` process and a `slice2ContoursPt2()` process, where `slice2ContoursPt1()` calls `slice2ContoursPt2()`. For reasons explained soon, we will actually split up the `slice2Contours()` process into a `slice2ContoursPt1(SA_LA = "la")` process and a `slice2ContoursPt2(SA_LA = "la")` process, where `slice2ContoursPt1(SA_LA = "la")` calls `slice2ContoursPt2(SA_LA = "la")`. 
 
 The `masks2ContoursLA()` function proceeds as follows:
 
