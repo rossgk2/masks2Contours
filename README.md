@@ -20,7 +20,7 @@ In the above, the user clicks and drags to lasso select points. Here's the full 
 
 <img src = "images/output.PNG" width = 500>
 
-The script also outputs two files, `GPFile_py.txt` and `Case1_FR{}_py.txt`, to the folder that the NIFTI files are located in.
+The script also outputs two files, `GPFile_py.txt` and `Case1_FR{}_py.txt`, to the folder that the NIFTI files are located in. These files are used to import the result of the masks2Contours process (the labeled points) into a fluid dynamical modeling program called CHeart.
 
 ## How to run the script
 
