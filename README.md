@@ -26,7 +26,7 @@ The script also outputs two files, `GPFile_py.txt` and `Case1_FR{}_py.txt`, to t
 
 1. Install [Eidolon](https://github.com/ericspod/Eidolon).
 2. Download this project, and then place the `masks2ContoursScripts` subdirectory from this project inside the `Eidolon` folder.
-3. Start Eidolon, and drag the NIFTI files that the script is to operate on into the Eidolon window. Note, you can drag multiple NIFTI files at once. Also note that the all NIFTI files come from the same folder.*
+3. Start Eidolon, and drag the NIFTI files that the script is to operate on into the Eidolon window. Note, you can drag multiple NIFTI files at once. Also note that the all NIFTI files come from the same folder*.
 5. Click `File` -> `Open Script`, navigate to inside `masks2ContoursScripts`, and click on `masks2ContoursEidolonScript.py`.
 6. Select the correct NIFTI file in each dropdown menu. Then click `OK`.
 
