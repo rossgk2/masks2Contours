@@ -30,7 +30,7 @@ The script also outputs two files, `GPFile_py.txt` and `Case1_FR{}_py.txt`, to t
 5. Click `File` -> `Open Script`, navigate to inside `masks2ContoursScripts`, and click on `masks2ContoursEidolonScript.py`.
 6. Select the correct NIFTI file in each dropdown menu. Then click `OK`.
 
-* That is, the folder containing the NIFTI files that are loaded into the dropdown menus with the "segmentation" parenthetical must be the same folder that contains the NIFTI files that are loaded into the dropdown menus with the "header metadata" parenthetical.
+\* That is, the folder containing the NIFTI files that are loaded into the dropdown menus with the "segmentation" parenthetical must be the same folder that contains the NIFTI files that are loaded into the dropdown menus with the "header metadata" parenthetical.
 
 ## Differences between this Python port and the MATLAB original 
 
