@@ -20,11 +20,17 @@ In the above, the user clicks and drags to lasso select points. Here's the full 
 
 <img src = "images/output.PNG" width = 500>
 
+The script also outputs two files, `GPFile_py.txt` and `Case1_FR{}_py.txt`, to the folder that the NIFTI files are located in.
+
 ## How to run the script
 
 1. Install [Eidolon](https://github.com/ericspod/Eidolon).
-2. Download this project, and then place the masks2ContoursScripts subdirectory from this project inside the Eidolon folder.
-3. Start Eidolon, click `File` -> `Open Script`, navigate to inside masks2ContoursScripts, and click on `masks2ContoursEidolonScript`.
+2. Download this project, and then place the `masks2ContoursScripts` subdirectory from this project inside the `Eidolon` folder.
+3. Start Eidolon, and drag the NIFTI files that the script is to operate on into the Eidolon window. Note, you can drag multiple NIFTI files at once. Also note that the all NIFTI files come from the same folder.*
+5. Click `File` -> `Open Script`, navigate to inside `masks2ContoursScripts`, and click on `masks2ContoursEidolonScript.py`.
+6. Select the correct NIFTI file in each dropdown menu. Then click `OK`.
+
+* That is, the folder containing the NIFTI files that are loaded into the dropdown menus with the "segmentation" parenthetical must be the same folder that contains the NIFTI files that are loaded into the dropdown menus with the "header metadata" parenthetical.
 
 ## Differences between this Python port and the MATLAB original 
 
@@ -93,3 +99,7 @@ Here's a diagram that summarizes the dependencies between the important function
 You might ask, why not have a "regular" function `slice2ContoursSA()` that gets looped over, and then have two functions `slice2ContoursLAPt1()` and `slice2ContoursLAPt2()` that are "collectively recursive"? Wouldn't this be more readable?
 
 It might be more readable in some ways. In my opinion, there are enough tasks executed each slice that are common to the short and long axes, both in "part 1" and "part 2", for this more complicated approach to be well worth it.
+
+## A common error
+
+If, after running `masks2ContoursEidolonScript.py` and clicking `OK`, you are met with the error `ValueError: attempt to get argmin of an empty sequence`, you likely incorrectly selected files in the dropdown menus.
